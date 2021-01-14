@@ -21,4 +21,10 @@ setuptools.setup(
     ],
     python_requires=">=3.7",
     install_requires=requirements,
+    entry_points="""
+        [console_scripts]
+        daskctl=dask_ctl.cli:daskctl
+        [dask_cluster_discovery]
+        proxycluster=dask_ctl.proxy:discover
+      """,
 )

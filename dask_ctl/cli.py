@@ -68,7 +68,7 @@ def list(discovery=None):
             try:
                 created = format_time_ago(
                     datetime.datetime.fromtimestamp(
-                        float(cluster.scheduler_info["time_started"])
+                        float(cluster.scheduler_info["started"])
                     )
                 )
             except KeyError:

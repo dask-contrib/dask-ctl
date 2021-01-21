@@ -28,7 +28,7 @@ def autocomplete_cluster_names(ctx, args, incomplete):
             if incomplete in cluster
         ]
 
-    return loop.run_sync(lambda: _autocomplete_cluster_names())
+    return loop.run_sync(_autocomplete_cluster_names)
 
 
 @click.group()
@@ -86,7 +86,7 @@ def list(discovery=None):
             )
         format_output(headers, output)
 
-    loop.run_sync(lambda: _list())
+    loop.run_sync(_list)
 
 
 @cli.command()
@@ -98,7 +98,7 @@ def list_discovery():
             [[m, dm[m]["package"], dm[m]["version"], dm[m]["path"]] for m in dm],
         )
 
-    loop.run_sync(lambda: _list_discovery())
+    loop.run_sync(_list_discovery)
 
 
 @cli.command()

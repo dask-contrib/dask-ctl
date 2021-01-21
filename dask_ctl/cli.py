@@ -6,6 +6,7 @@ from tornado.ioloop import IOLoop
 from dask.utils import format_bytes, format_time_ago
 from distributed.cli.utils import check_python_3, install_signal_handlers
 
+from . import __version__
 from .utils import format_table
 from .discovery import (
     discover_clusters,
@@ -124,6 +125,11 @@ def delete(
         click.echo(e)
     else:
         click.echo(f"Deleted cluster {name}.")
+
+
+@cli.command()
+def version():
+    click.echo(__version__)
 
 
 def format_output(headers, output):

@@ -1,4 +1,5 @@
 import setuptools
+import versioneer
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
@@ -7,7 +8,8 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="dask-ctl",
-    version="2021.01.0",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author="Jacob Tomlinson",
     author_email="jacob@tomlinson.email",
     description="A set of tools to provide a control plane for managing the lifecycle of Dask clusters.",

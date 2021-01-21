@@ -9,6 +9,7 @@ from distributed.cli.utils import check_python_3, install_signal_handlers
 from .utils import format_table
 from .discovery import (
     discover_clusters,
+    discover_cluster_names,
     list_discovery_methods,
     scale_cluster,
     delete_cluster,
@@ -17,6 +18,17 @@ from .discovery import (
 
 loop = IOLoop.current()
 install_signal_handlers(loop)
+
+
+def autocomplete_cluster_names(ctx, args, incomplete):
+    async def _autocomplete_cluster_names():
+        return [
+            cluster
+            async for cluster, _ in discover_cluster_names()
+            if incomplete in cluster
+        ]
+
+    return loop.run_sync(lambda: _autocomplete_cluster_names())
 
 
 @click.group()
@@ -90,20 +102,28 @@ def list_discovery():
 
 
 @cli.command()
-@click.argument("name")
+@click.argument("name", autocompletion=autocomplete_cluster_names)
 @click.argument("n-workers", type=int)
 def scale(name, n_workers):
-    scale_cluster(name, n_workers)
-    click.echo(f"Scaled cluster {name} to {n_workers} workers.")
+    try:
+        scale_cluster(name, n_workers)
+    except Exception as e:
+        click.echo(e)
+    else:
+        click.echo(f"Scaled cluster {name} to {n_workers} workers.")
 
 
 @cli.command()
-@click.argument("name")
-def delete(name):
+@click.argument("name", autocompletion=autocomplete_cluster_names)
+def delete(
+    name,
+):
     try:
         delete_cluster(name)
     except Exception as e:
         click.echo(e)
+    else:
+        click.echo(f"Deleted cluster {name}.")
 
 
 def format_output(headers, output):

@@ -36,6 +36,12 @@ class ProxyCluster(Cluster):
         cluster.sync(cluster._start)
         return cluster
 
+    def scale(self, *args, **kwargs):
+        raise TypeError("Scaling of ProxyCluster objects is not supported.")
+
+    def close(self, *args, **kwargs):
+        raise TypeError("Closing of ProxyCluster objects is not supported.")
+
 
 async def discover():
     open_ports = []

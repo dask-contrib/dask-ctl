@@ -1,3 +1,4 @@
+from typing import Callable, AsyncIterator, Tuple
 import asyncio
 import contextlib
 
@@ -24,12 +25,64 @@ class ProxyCluster(Cluster):
     """
 
     @classmethod
-    def from_name(cls, name, loop=None, asynchronous=False):
+    def from_name(
+        cls, name: str, loop: asyncio.BaseEventLoop = None, asynchronous: bool = False
+    ):
+        """Get instance of ``ProxyCluster`` by name.
+
+        Parameters
+        ----------
+        name
+            Name of cluster to get ``ProxyCluster`` for. Has the format ``proxycluster-{port}``.
+        loop (optional)
+            Existing event loop to use.
+        asynchronous (optional)
+            Start asynchronously. Default ``False``.
+
+        Returns
+        -------
+        ProxyCluster
+            Instance of ProxyCluster.
+
+        Examples
+        --------
+        >>> from dask.distributed import LocalCluster  # doctest: +SKIP
+        >>> cluster = LocalCluster(scheduler_port=8786)  # doctest: +SKIP
+        >>> ProxyCluster.from_name("proxycluster-8786")  # doctest: +SKIP
+        ProxyCluster(proxycluster-8786, 'tcp://localhost:8786', workers=4, threads=12, memory=17.18 GB)
+
+        """
         port = name.split("-")[-1]
         return cls.from_port(port, loop=loop, asynchronous=asynchronous)
 
     @classmethod
-    def from_port(cls, port, loop=None, asynchronous=False):
+    def from_port(
+        cls, port: int, loop: asyncio.BaseEventLoop = None, asynchronous: bool = False
+    ):
+        """Get instance of ``ProxyCluster`` by port.
+
+        Parameters
+        ----------
+        port
+            Localhost port of cluster to get ``ProxyCluster`` for.
+        loop (optional)
+            Existing event loop to use.
+        asynchronous (optional)
+            Start asynchronously. Default ``False``.
+
+        Returns
+        -------
+        ProxyCluster
+            Instance of ProxyCluster.
+
+        Examples
+        --------
+        >>> from dask.distributed import LocalCluster  # doctest: +SKIP
+        >>> cluster = LocalCluster(scheduler_port=81234)  # doctest: +SKIP
+        >>> ProxyCluster.from_port(81234)  # doctest: +SKIP
+        ProxyCluster(proxycluster-81234, 'tcp://localhost:81234', workers=4, threads=12, memory=17.18 GB)
+
+        """
         cluster = cls(asynchronous=asynchronous)
         cluster.name = gen_name(port)
 
@@ -51,7 +104,35 @@ class ProxyCluster(Cluster):
         raise TypeError("Closing of ProxyCluster objects is not supported.")
 
 
-async def discover():
+async def discover() -> AsyncIterator[Tuple[str, Callable]]:
+    """Discover proxy clusters.
+
+    If a Dask Scheduler is running locally it is generally assumed that the process is tightly
+    coupled to a parent process and therefore the cluster manager type cannot be reconstructed.
+    Instead we can construct ProxyCluster objects which allow limited interactivity with a local cluster in the same way
+    you would with a regular cluster, allowing you to retrieve logs, get stats, etc.
+
+    This doscovery works by checking all local services listening on ports, then attempting to connect a
+    :class:`dask.distributed.Client` to it. If it is successful we assume it is a cluster that we can represent.
+
+    Notes
+    -----
+    Listing open ports is not possible as a reular user on macOS. So discovery must be run as root. For regular users
+    we still check the default ``8786`` port for a scheduler.
+
+    Yields
+    -------
+    tuple
+        Each tuple contains the name of the cluster and a class which can be used to represent it.
+
+    Examples
+    --------
+    >>> from dask.distributed import LocalCluster  # doctest: +SKIP
+    >>> cluster = LocalCluster(scheduler_port=8786)  # doctest: +SKIP
+    >>> [name async for name in discover()]  # doctest: +SKIP
+    [('proxycluster-8786', dask_ctl.proxy.ProxyCluster)]
+
+    """
     open_ports = []
 
     try:

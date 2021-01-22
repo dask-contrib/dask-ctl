@@ -7,6 +7,7 @@ from .discovery import (
     discover_cluster_names,
     discover_clusters,
     list_clusters,
+    list_discovery_methods,
     get_cluster,
     scale_cluster,
     delete_cluster,

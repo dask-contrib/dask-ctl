@@ -9,6 +9,10 @@ from distributed.client import Client
 from distributed.utils import LoopRunner
 
 
+def gen_name(port):
+    return f"proxycluster-{port}"
+
+
 class ProxyCluster(Cluster):
     """A representation of a cluster with a locally running scheduler.
 
@@ -21,9 +25,13 @@ class ProxyCluster(Cluster):
 
     @classmethod
     def from_name(cls, name, loop=None, asynchronous=False):
-        cluster = cls(asynchronous=asynchronous)
-        cluster.name = name
         port = name.split("-")[-1]
+        return cls.from_port(port, loop=loop, asynchronous=asynchronous)
+
+    @classmethod
+    def from_port(cls, port, loop=None, asynchronous=False):
+        cluster = cls(asynchronous=asynchronous)
+        cluster.name = gen_name(port)
 
         cluster.scheduler_comm = rpc(f"tcp://localhost:{port}")
 
@@ -70,6 +78,6 @@ async def discover():
     for port in await asyncio.gather(*[try_connect(port) for port in open_ports]):
         if port:
             yield (
-                f"proxycluster-{port}",
+                gen_name(port),
                 ProxyCluster,
             )

@@ -1,0 +1,6 @@
+[run]
+omit =
+    setup.py
+    versioneer.py
+    dask_ctl/tests/test*
+    dask_ctl/_version.py

@@ -34,12 +34,19 @@ def autocomplete_cluster_names(ctx, args, incomplete):
 
 @click.group()
 def cli():
+    """daskctl controls Dask clusters."""
     pass
 
 
 @cli.command()
 @click.argument("discovery", type=str, required=False)
 def list(discovery=None):
+    """List Dask clusters.
+
+    DISCOVERY can be optionally set to restrict which discovery method to use.
+    Run `daskctl list-discovery` for all available options.
+    """
+
     async def _list():
         headers = [
             "Name",
@@ -92,6 +99,14 @@ def list(discovery=None):
 
 @cli.command()
 def list_discovery():
+    """List installed discovery methods.
+
+    Dask clusters can be created by many different packages. Each package has the option
+    to register a method to discover clusters it creates. This command lists all discovery
+    methods registered on your system.
+
+    """
+
     async def _list_discovery():
         dm = list_discovery_methods()
         format_output(
@@ -106,6 +121,14 @@ def list_discovery():
 @click.argument("name", autocompletion=autocomplete_cluster_names)
 @click.argument("n-workers", type=int)
 def scale(name, n_workers):
+    """Scale a Dask cluster.
+
+    NAME is the name of the cluster to scale.
+    Run `daskctl list` for all available options.
+
+    N_WORKERS is the number of workers to scale to.
+
+    """
     try:
         scale_cluster(name, n_workers)
     except Exception as e:
@@ -119,6 +142,12 @@ def scale(name, n_workers):
 def delete(
     name,
 ):
+    """Delete a Dask cluster.
+
+    NAME is the name of the cluster to delete.
+    Run `daskctl list` for all available options.
+
+    """
     try:
         delete_cluster(name)
     except Exception as e:
@@ -129,6 +158,7 @@ def delete(
 
 @cli.command()
 def version():
+    """Show the daskctl version."""
     click.echo(__version__)
 
 

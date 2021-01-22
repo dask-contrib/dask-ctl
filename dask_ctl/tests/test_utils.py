@@ -10,7 +10,7 @@ def test_table_format():
         ["def456", "FooCluster", 2, 6, "4 GB", "8 minutes ago", "Running"],
     ]
     expected_output = (
-        "NAME    TYPE        WORKERS  THREADS  MEMORY    CREATED        STATUS \n"
+        "NAME    TYPE        WORKERS  THREADS  MEMORY    CREATED        STATUS\n"
         "abc123  FooCluster        4       12  17.18 GB  2 minutes ago  Running\n"
         "def456  FooCluster        2        6  4 GB      8 minutes ago  Running"
     )

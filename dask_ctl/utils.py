@@ -36,7 +36,7 @@ def format_table(rows, headers=None):
 
     return "\n".join(
         [
-            "  ".join([justify(row[i], col_widths[i]) for i in range(len(row))])
+            "  ".join([justify(row[i], col_widths[i]) for i in range(len(row))]).strip()
             for row in rows
         ]
     )

@@ -24,6 +24,7 @@ jobs:
       - name: Install
         run: |
           pip install -e .
+          pip install git+https://github.com/dask/dask.git git+https://github.com/dask/distributed.git
           pip install -r requirements_test.txt
 
       - name: Run tests

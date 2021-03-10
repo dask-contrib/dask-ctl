@@ -44,7 +44,7 @@ Install the test dependencies.
 
 .. code-block:: bash
 
-   $ pip install -r requirements_test.txt
+   $ pip install -r requirements-test.txt
 
 Run the tests.
 

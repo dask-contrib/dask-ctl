@@ -133,9 +133,11 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     [('proxycluster-8786', dask_ctl.proxy.ProxyCluster)]
 
     """
-    open_ports = []
+    open_ports = {8786}
 
-    try:
+    with contextlib.suppress(
+        psutil.AccessDenied
+    ):  # On macOS this needs to be run as root
         connections = psutil.net_connections()
         for connection in connections:
             if (
@@ -143,15 +145,14 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
                 and connection.family.name == "AF_INET"
                 and connection.laddr.port not in open_ports
             ):
-                open_ports.append(connection.laddr.port)
-    except psutil.AccessDenied:
-        # On macOS this needs to be run as root to work but we can still try the default port
-        open_ports = [8786]
+                open_ports.add(connection.laddr.port)
 
     async def try_connect(port):
-        with contextlib.suppress(OSError):
+        with contextlib.suppress(OSError, asyncio.TimeoutError):
             async with Client(
-                f"tcp://localhost:{port}", asynchronous=True, timeout=0.5
+                f"tcp://localhost:{port}",
+                asynchronous=True,
+                timeout=1,  # Minimum of 1 for Windows
             ):
                 return port
         return

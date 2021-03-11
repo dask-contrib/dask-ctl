@@ -33,7 +33,7 @@ async def test_cluster_client():
     port = 8786
     async with LocalCluster(scheduler_port=port, asynchronous=True) as _:
         async with Client(
-            f"tcp://localhost:{port}", asynchronous=True, timeout=0.5
+            f"tcp://localhost:{port}", asynchronous=True, timeout=10
         ) as client:
             assert int(client.scheduler.address.split(":")[-1]) == port
 

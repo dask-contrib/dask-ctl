@@ -148,7 +148,7 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
                 open_ports.add(connection.laddr.port)
 
     async def try_connect(port):
-        with contextlib.suppress(OSError, asyncio.exceptions.TimeoutError):
+        with contextlib.suppress(OSError, asyncio.TimeoutError):
             async with Client(
                 f"tcp://localhost:{port}", asynchronous=True, timeout=0.5
             ):

@@ -30,7 +30,7 @@ async def test_cluster_client():
     from dask.distributed import Client
 
     port = 8786
-    async with LocalCluster(scheduler_port=port, asynchronous=True) as cluster:
+    async with LocalCluster(scheduler_port=port, asynchronous=True) as _:
         async with Client(
             f"tcp://localhost:{port}", asynchronous=True, timeout=1
         ) as client:

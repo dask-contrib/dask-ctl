@@ -150,7 +150,9 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     async def try_connect(port):
         with contextlib.suppress(OSError, asyncio.TimeoutError):
             async with Client(
-                f"tcp://localhost:{port}", asynchronous=True, timeout=0.5
+                f"tcp://localhost:{port}",
+                asynchronous=True,
+                timeout=1,  # Minimum of 1 for Windows
             ):
                 return port
         return

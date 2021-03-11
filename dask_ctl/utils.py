@@ -1,3 +1,11 @@
+from tornado.ioloop import IOLoop
+from distributed.cli.utils import install_signal_handlers
+
+
+loop = IOLoop.current()
+install_signal_handlers(loop)
+
+
 def format_table(rows, headers=None):
     """Formats list of lists into a table.
 

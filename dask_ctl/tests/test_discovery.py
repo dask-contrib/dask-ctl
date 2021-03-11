@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 
 from typing import AsyncIterator
 
@@ -33,7 +32,7 @@ async def test_cluster_client():
     port = 8786
     async with LocalCluster(scheduler_port=port, asynchronous=True) as cluster:
         async with Client(
-            f"tcp://localhost:{port}", asynchronous=True, timeout=2
+            f"tcp://localhost:{port}", asynchronous=True, timeout=1
         ) as client:
             assert int(client.scheduler.address.split(":")[-1]) == port
 

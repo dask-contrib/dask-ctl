@@ -5,6 +5,8 @@ import warnings
 
 from distributed.deploy.spec import SpecCluster
 
+from .utils import suppress_output
+
 
 def list_discovery_methods() -> Dict[str, Callable]:
     """Lists registered discovery methods.
@@ -33,7 +35,7 @@ def list_discovery_methods() -> Dict[str, Callable]:
     """
     discovery_methods = {}
     for ep in pkg_resources.iter_entry_points(group="dask_cluster_discovery"):
-        with suppress(AttributeError):
+        with suppress(AttributeError), suppress_output():
             discovery_methods.update(
                 {
                     ep.name: {
@@ -79,13 +81,14 @@ async def discover_cluster_names(
     discovery_methods = list_discovery_methods()
     for discovery_method in discovery_methods:
         try:
-            if discovery is None or discovery == discovery_method:
-                async for cluster_name, cluster_class in discovery_methods[
-                    discovery_method
-                ]["discover"]():
-                    yield (cluster_name, cluster_class)
-                if discovery is not None:
-                    return
+            with suppress_output():
+                if discovery is None or discovery == discovery_method:
+                    async for cluster_name, cluster_class in discovery_methods[
+                        discovery_method
+                    ]["discover"]():
+                        yield (cluster_name, cluster_class)
+                    if discovery is not None:
+                        return
         except Exception as e:  # We are calling code that is out of our control here, so handling broad exceptions
             if discovery is None:
                 warnings.warn(f"Cluster discovery for {discovery_method} failed.")
@@ -121,5 +124,5 @@ async def discover_clusters(discovery=None) -> AsyncIterator[SpecCluster]:
 
     """
     async for cluster_name, cluster_class in discover_cluster_names(discovery):
-        with suppress(Exception):
+        with suppress(Exception), suppress_output():
             yield cluster_class.from_name(cluster_name)

@@ -19,6 +19,37 @@ A set of tools to provide a control plane for managing the lifecycle of Dask clu
 
 .. code-block:: bash
 
-    $ daskctl cluster list
-    NAME               ADDRESS               TYPE          WORKERS  THREADS  MEMORY    CREATED   STATUS
-    proxycluster-8786  tcp://localhost:8786  ProxyCluster        4       12  17.18 GB  Just now  Running
+      $ daskctl cluster list
+      NAME               ADDRESS               TYPE          WORKERS  THREADS  MEMORY    CREATED   STATUS
+      proxycluster-8786  tcp://localhost:8786  ProxyCluster        4       12  17.18 GB  Just now  Running
+
+Installation
+------------
+
+.. code-block:: bash
+
+   pip install dask-ctl
+   # or
+   conda install -c conda-forge dask-ctl
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Usage
+
+   cli.rst
+   api.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Integrating
+
+   integrating.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Development
+
+   contributing.rst
+   releasing.rst
+

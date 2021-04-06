@@ -1,0 +1,4 @@
+sphinx
+sphinx-autobuild
+sphinx-click
+dask-sphinx-theme

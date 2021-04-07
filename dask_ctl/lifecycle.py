@@ -1,8 +1,49 @@
+import importlib
 from typing import List
 
 from distributed.deploy.cluster import Cluster
 from .discovery import discover_cluster_names, discover_clusters
+from .spec import load_spec
 from .utils import loop
+
+
+async def create_cluster(spec_path: str) -> Cluster:
+    """Create a cluster from a spec file.
+
+    Parameters
+    ----------
+    spec_path
+        Path to a cluster spec file.
+
+    Returns
+    -------
+    Cluster
+        Cluster manager representing the spec.
+
+    Examples
+    --------
+    With the spec:
+
+    .. code-block:: yaml
+
+        # /path/to/spec.yaml
+        version: 1
+        module: "dask.distributed"
+        class: "LocalCluster"
+
+    >>> create_cluster("/path/to/spec.yaml")  # doctest: +SKIP
+    LocalCluster(b3973c71, 'tcp://127.0.0.1:8786', workers=4, threads=12, memory=17.18 GB)
+
+    """
+    cm_module, cm_class, args, kwargs = load_spec(spec_path)
+    module = importlib.import_module(cm_module)
+    cluster_manager = getattr(module, cm_class)
+
+    kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
+
+    cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
+    cluster.shutdown_on_close = False
+    return cluster
 
 
 def list_clusters() -> List[Cluster]:

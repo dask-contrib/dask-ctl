@@ -14,6 +14,11 @@ def test_list():
         assert b"Running" in output
 
 
+def test_create(simple_spec_path):
+    output = check_output(["daskctl", "cluster", "create", "-f", simple_spec_path])
+    assert b"Created" in output
+
+
 def test_autocompletion():
     with LocalCluster(scheduler_port=8786) as _:
         assert len(autocomplete_cluster_names(None, None, "")) == 1

@@ -8,11 +8,14 @@ Lifecycle
 
 .. autosummary::
     get_cluster
+    create_cluster
     scale_cluster
     delete_cluster
     list_clusters
 
 .. autofunction:: get_cluster
+
+.. autofunction:: create_cluster
 
 .. autofunction:: scale_cluster
 

@@ -39,6 +39,7 @@ Installation
 
    cli.rst
    api.rst
+   spec.rst
 
 .. toctree::
    :maxdepth: 2

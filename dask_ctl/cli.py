@@ -13,6 +13,7 @@ from .discovery import (
     list_discovery_methods,
 )
 from .lifecycle import (
+    create_cluster,
     scale_cluster,
     delete_cluster,
 )
@@ -39,6 +40,23 @@ def cli():
 def cluster():
     """Cluster commands."""
     pass
+
+
+@cluster.command()
+@click.option("-f", "--spec-file-path")
+def create(spec_file_path):
+    """Create a Dask cluster from a spec file."""
+
+    async def _create():
+        try:
+            cluster = await create_cluster(spec_file_path)
+        except Exception:
+            click.echo("Failed to create cluster.")
+            raise click.Abort()
+        else:
+            click.echo(f"Created cluster {cluster.name}.")
+
+    loop.run_sync(_create)
 
 
 @cluster.command()
@@ -158,8 +176,11 @@ def list_discovery():
     async def _list_discovery():
         dm = list_discovery_methods()
         format_output(
-            ["name", "package", "version", "path"],
-            [[m, dm[m]["package"], dm[m]["version"], dm[m]["path"]] for m in dm],
+            ["name", "package", "version", "path", "enabled"],
+            [
+                [m, dm[m]["package"], dm[m]["version"], dm[m]["path"], dm[m]["enabled"]]
+                for m in dm
+            ],
         )
 
     loop.run_sync(_list_discovery)

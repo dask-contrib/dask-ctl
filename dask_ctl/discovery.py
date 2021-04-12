@@ -35,7 +35,7 @@ def list_discovery_methods() -> Dict[str, Callable]:
     """
     discovery_methods = {}
     for ep in pkg_resources.iter_entry_points(group="dask_cluster_discovery"):
-        with suppress(AttributeError), suppress_output():
+        with suppress(AttributeError, ImportError), suppress_output():
             discovery_methods.update(
                 {
                     ep.name: {
@@ -43,6 +43,7 @@ def list_discovery_methods() -> Dict[str, Callable]:
                         "package": ep.dist.key,
                         "version": ep.dist.version,
                         "path": ep.dist.location,
+                        "enabled": True,  # TODO allow disabling
                     }
                 }
             )

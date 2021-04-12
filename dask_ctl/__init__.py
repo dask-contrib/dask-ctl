@@ -10,6 +10,7 @@ from .discovery import (
 )
 from .lifecycle import (
     get_cluster,
+    create_cluster,
     scale_cluster,
     delete_cluster,
     list_clusters,

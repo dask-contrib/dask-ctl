@@ -44,7 +44,7 @@ async def test_discovery_list():
     port = 8786
     async with LocalCluster(scheduler_port=port, asynchronous=True) as _:
         async for name, _ in discover():
-            assert str(port) in name
+            assert "_sched" in name
 
 
 @pytest.mark.asyncio

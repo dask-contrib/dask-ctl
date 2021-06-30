@@ -4,8 +4,8 @@ import asyncio
 from zeroconf import (
     IPVersion,
     ServiceInfo,
-    ServiceBrowser,
     Zeroconf,
+    ServiceBrowser,
 )
 
 from distributed.deploy.cluster import Cluster

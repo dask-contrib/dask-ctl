@@ -21,6 +21,7 @@ def test_create(simple_spec_path):
 
 def test_autocompletion():
     with LocalCluster(scheduler_port=8786) as _:
-        assert len(autocomplete_cluster_names(None, None, "")) == 1
-        assert len(autocomplete_cluster_names(None, None, "proxy")) == 1
+        names = autocomplete_cluster_names(None, None, "")
+        assert len(names) == 1
+        assert "_sched" in names[0]
         assert len(autocomplete_cluster_names(None, None, "local")) == 0

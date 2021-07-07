@@ -1,17 +1,19 @@
 from typing import Callable, AsyncIterator, Tuple
 import asyncio
-import contextlib
 
-import psutil
+from zeroconf import (
+    IPVersion,
+    ServiceInfo,
+    Zeroconf,
+)
+from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
 
 from distributed.deploy.cluster import Cluster
 from distributed.core import rpc, Status
-from distributed.client import Client
 from distributed.utils import LoopRunner
 
 
-def gen_name(port):
-    return f"proxycluster-{port}"
+_ZC_SERVICE = "_dask._tcp.local."
 
 
 class ProxyCluster(Cluster):
@@ -52,41 +54,19 @@ class ProxyCluster(Cluster):
         ProxyCluster(proxycluster-8786, 'tcp://localhost:8786', workers=4, threads=12, memory=17.18 GB)
 
         """
-        port = name.split("-")[-1]
-        return cls.from_port(port, loop=loop, asynchronous=asynchronous)
 
-    @classmethod
-    def from_port(
-        cls, port: int, loop: asyncio.BaseEventLoop = None, asynchronous: bool = False
-    ):
-        """Get instance of ``ProxyCluster`` by port.
-
-        Parameters
-        ----------
-        port
-            Localhost port of cluster to get ``ProxyCluster`` for.
-        loop (optional)
-            Existing event loop to use.
-        asynchronous (optional)
-            Start asynchronously. Default ``False``.
-
-        Returns
-        -------
-        ProxyCluster
-            Instance of ProxyCluster.
-
-        Examples
-        --------
-        >>> from dask.distributed import LocalCluster  # doctest: +SKIP
-        >>> cluster = LocalCluster(scheduler_port=81234)  # doctest: +SKIP
-        >>> ProxyCluster.from_port(81234)  # doctest: +SKIP
-        ProxyCluster(proxycluster-81234, 'tcp://localhost:81234', workers=4, threads=12, memory=17.18 GB)
-
-        """
         cluster = cls(asynchronous=asynchronous)
-        cluster.name = gen_name(port)
+        cluster.name = name
 
-        cluster.scheduler_comm = rpc(f"tcp://localhost:{port}")
+        # Get scheduler address via zeroconf
+        zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
+        scheduler = ServiceInfo(_ZC_SERVICE, f"{name}._dask._tcp.local.")
+        if not scheduler.request(zeroconf, 3000):
+            raise RuntimeError("Unable to find cluster")
+        addr = scheduler.parsed_addresses()[0]
+        protocol = scheduler.properties[b"protocol"].decode("utf-8")
+        cluster.scheduler_comm = rpc(f"{protocol}://{addr}:{scheduler.port}")
+        zeroconf.close()
 
         cluster._loop_runner = LoopRunner(loop=loop, asynchronous=asynchronous)
         cluster.loop = cluster._loop_runner.loop
@@ -96,12 +76,6 @@ class ProxyCluster(Cluster):
         cluster.status = Status.starting
         cluster.sync(cluster._start)
         return cluster
-
-    def scale(self, *args, **kwargs):
-        raise TypeError("Scaling of ProxyCluster objects is not supported.")
-
-    def close(self, *args, **kwargs):
-        raise TypeError("Closing of ProxyCluster objects is not supported.")
 
 
 async def discover() -> AsyncIterator[Tuple[str, Callable]]:
@@ -133,33 +107,25 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     [('proxycluster-8786', dask_ctl.proxy.ProxyCluster)]
 
     """
-    open_ports = {8786}
+    aiozc = AsyncZeroconf(ip_version=IPVersion.V4Only)
+    browser = AsyncServiceBrowser(
+        aiozc.zeroconf, [_ZC_SERVICE], handlers=[lambda *args, **kw: None]
+    )
 
-    with contextlib.suppress(
-        psutil.AccessDenied
-    ):  # On macOS this needs to be run as root
-        connections = psutil.net_connections()
-        for connection in connections:
-            if (
-                connection.status == "LISTEN"
-                and connection.family.name == "AF_INET"
-                and connection.laddr.port not in open_ports
-            ):
-                open_ports.add(connection.laddr.port)
+    # ServiceBrowser runs in a thread. Give it a chance to find some schedulers.
+    await asyncio.sleep(0.5)
 
-    async def try_connect(port):
-        with contextlib.suppress(OSError, asyncio.TimeoutError):
-            async with Client(
-                f"tcp://localhost:{port}",
-                asynchronous=True,
-                timeout=1,  # Minimum of 1 for Windows
-            ):
-                return port
-        return
+    schedulers = [
+        x.split(".")[0]
+        for x in aiozc.zeroconf.cache.names()
+        if x.endswith(_ZC_SERVICE) and x != _ZC_SERVICE
+    ]
 
-    for port in await asyncio.gather(*[try_connect(port) for port in open_ports]):
-        if port:
-            yield (
-                gen_name(port),
-                ProxyCluster,
-            )
+    for scheduler in schedulers:
+        yield (
+            scheduler,
+            ProxyCluster,
+        )
+
+    await browser.async_cancel()
+    await aiozc.async_close()

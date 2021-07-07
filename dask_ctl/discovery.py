@@ -1,3 +1,4 @@
+import asyncio
 from typing import Callable, Dict, AsyncIterator, Tuple
 from contextlib import suppress
 import pkg_resources
@@ -29,7 +30,7 @@ def list_discovery_methods() -> Dict[str, Callable]:
         'version': '<package version>',
         'path': '<path to package>'}
     }
-    >>> list(list_discovery_methods())
+    >>> list(list_discovery_methods())  # doctest: +SKIP
     ['proxycluster']
 
     """
@@ -126,4 +127,6 @@ async def discover_clusters(discovery=None) -> AsyncIterator[SpecCluster]:
     """
     async for cluster_name, cluster_class in discover_cluster_names(discovery):
         with suppress(Exception), suppress_output():
-            yield cluster_class.from_name(cluster_name)
+            yield await asyncio.get_running_loop().run_in_executor(
+                None, cluster_class.from_name, cluster_name
+            )

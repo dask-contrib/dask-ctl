@@ -3,3 +3,4 @@ dask
 distributed
 tornado
 pyyaml
+zeroconf>=0.32.0

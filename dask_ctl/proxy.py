@@ -5,8 +5,8 @@ from zeroconf import (
     IPVersion,
     ServiceInfo,
     Zeroconf,
-    ServiceBrowser,
 )
+from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
 
 from distributed.deploy.cluster import Cluster
 from distributed.core import rpc, Status
@@ -107,9 +107,9 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     [('proxycluster-8786', dask_ctl.proxy.ProxyCluster)]
 
     """
-    zeroconf = Zeroconf(ip_version=IPVersion.V4Only)
-    browser = ServiceBrowser(
-        zeroconf, [_ZC_SERVICE], handlers=[lambda *args, **kw: None]
+    aiozc = AsyncZeroconf(ip_version=IPVersion.V4Only)
+    browser = AsyncServiceBrowser(
+        aiozc.zeroconf, [_ZC_SERVICE], handlers=[lambda *args, **kw: None]
     )
 
     # ServiceBrowser runs in a thread. Give it a chance to find some schedulers.
@@ -117,7 +117,7 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
 
     schedulers = [
         x.split(".")[0]
-        for x in zeroconf.cache.names()
+        for x in aiozc.zeroconf.cache.names()
         if x.endswith(_ZC_SERVICE) and x != _ZC_SERVICE
     ]
 
@@ -127,5 +127,5 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
             ProxyCluster,
         )
 
-    browser.cancel()
-    zeroconf.close()
+    await browser.async_cancel()
+    await aiozc.async_close()

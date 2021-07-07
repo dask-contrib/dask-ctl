@@ -99,7 +99,7 @@ def get_cluster(name: str) -> Cluster:
     async def _get_cluster():
         async for cluster_name, cluster_class in discover_cluster_names():
             if cluster_name == name:
-                return cluster_class.from_name(name)
+                return await loop.run_in_executor(None, cluster_class.from_name, name)
         raise RuntimeError("No such cluster %s", name)
 
     return loop.run_sync(_get_cluster)
@@ -127,7 +127,10 @@ def scale_cluster(name: str, n_workers: int) -> None:
     async def _scale_cluster():
         async for cluster_name, cluster_class in discover_cluster_names():
             if cluster_name == name:
-                return cluster_class.from_name(name).scale(n_workers)
+                cluster = await loop.run_in_executor(
+                    None, cluster_class.from_name, name
+                )
+                return await loop.run_in_executor(None, cluster.scale, n_workers)
         raise RuntimeError("No such cluster %s", name)
 
     return loop.run_sync(_scale_cluster)
@@ -153,7 +156,10 @@ def delete_cluster(name: str) -> None:
     async def _delete_cluster():
         async for cluster_name, cluster_class in discover_cluster_names():
             if cluster_name == name:
-                return cluster_class.from_name(name).close()
+                cluster = await loop.run_in_executor(
+                    None, cluster_class.from_name, name
+                )
+                return await loop.run_in_executor(None, cluster.close)
         raise RuntimeError("No such cluster %s", name)
 
     return loop.run_sync(_delete_cluster)

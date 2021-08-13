@@ -29,7 +29,7 @@ def list_discovery_methods() -> Dict[str, Callable]:
         'version': '<package version>',
         'path': '<path to package>'}
     }
-    >>> list(list_discovery_methods())
+    >>> list(list_discovery_methods())  # doctest: +SKIP
     ['proxycluster']
 
     """

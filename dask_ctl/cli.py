@@ -1,12 +1,17 @@
 import datetime
 
 import click
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 from dask.utils import format_bytes, format_time_ago
+from distributed.core import Status
 from distributed.cli.utils import check_python_3
+from distributed.utils import typename
 
 from . import __version__
-from .utils import loop, format_table
+from .utils import loop
 from .discovery import (
     discover_clusters,
     discover_cluster_names,
@@ -17,6 +22,8 @@ from .lifecycle import (
     scale_cluster,
     delete_cluster,
 )
+
+console = Console()
 
 
 def autocomplete_cluster_names(ctx, args, incomplete):
@@ -69,51 +76,65 @@ def list(discovery=None):
     """
 
     async def _list():
-        headers = [
-            "Name",
-            "Address",
-            "Type",
-            "Workers",
-            "Threads",
-            "Memory",
-            "Created",
-            "Status",
-        ]
-        output = []
-        async for cluster in discover_clusters(discovery=discovery):
+        table = Table(box=box.SIMPLE)
+        table.add_column("Name", style="cyan", no_wrap=True)
+        table.add_column("Address")
+        table.add_column("Type")
+        table.add_column("Discovery")
+        table.add_column("Workers")
+        table.add_column("Threads")
+        table.add_column("Memory")
+        table.add_column("Created")
+        table.add_column("Status")
 
-            threads = sum(
-                w["nthreads"] for w in cluster.scheduler_info["workers"].values()
-            )
-            memory = format_bytes(
-                sum(
-                    [
-                        w["memory_limit"]
-                        for w in cluster.scheduler_info["workers"].values()
-                    ]
-                )
-            )
-            try:
-                created = format_time_ago(
-                    datetime.datetime.fromtimestamp(
-                        float(cluster.scheduler_info["started"])
-                    )
-                )
-            except KeyError:
-                created = "Unknown"
-            output.append(
-                [
-                    cluster.name,
-                    cluster.scheduler_address,
-                    type(cluster).__name__,
-                    len(cluster.scheduler_info["workers"]),
-                    threads,
-                    memory,
-                    created,
-                    cluster.status.name.title(),
-                ]
-            )
-        format_output(headers, output)
+        for discovery_method in list_discovery_methods():
+            if discovery is None or discovery == discovery_method:
+                try:
+                    async for cluster in discover_clusters(discovery=discovery_method):
+                        try:
+                            workers = cluster.scheduler_info["workers"].values()
+                        except KeyError:
+                            workers = []
+                        try:
+                            created = format_time_ago(
+                                datetime.datetime.fromtimestamp(
+                                    float(cluster.scheduler_info["started"])
+                                )
+                            )
+                        except KeyError:
+                            created = "Unknown"
+
+                        status = cluster.status.name.title()
+                        if cluster.status == Status.created:
+                            status = f"[yellow]{status}[/yellow]"
+                        elif cluster.status == Status.running:
+                            status = f"[green]{status}[/green]"
+                        else:
+                            status = f"[red]{status}[/red]"
+
+                        table.add_row(
+                            cluster.name,
+                            cluster.scheduler_address,
+                            typename(type(cluster)),
+                            discovery_method,
+                            str(len(workers)),
+                            str(sum(w["nthreads"] for w in workers)),
+                            format_bytes(sum([w["memory_limit"] for w in workers])),
+                            created,
+                            status,
+                        )
+                except Exception:
+                    if discovery is None:
+                        console.print(
+                            f":warning: Discovery {discovery_method} failed. "
+                            f"Run `daskctl cluster list {discovery_method}` for more info.",
+                            style="yellow",
+                        )
+                    else:
+                        console.print_exception(show_locals=True)
+                        raise click.Abort()
+
+        console.print(table)
 
     loop.run_sync(_list)
 
@@ -174,14 +195,22 @@ def list_discovery():
     """
 
     async def _list_discovery():
-        dm = list_discovery_methods()
-        format_output(
-            ["name", "package", "version", "path", "enabled"],
-            [
-                [m, dm[m]["package"], dm[m]["version"], dm[m]["path"], dm[m]["enabled"]]
-                for m in dm
-            ],
-        )
+        table = Table(box=box.SIMPLE)
+        table.add_column("Name", style="cyan", no_wrap=True)
+        table.add_column("Package", justify="right", style="magenta")
+        table.add_column("Version", style="green")
+        table.add_column("Path", style="yellow")
+        table.add_column("Enabled", justify="right", style="green")
+
+        for method_name, method in list_discovery_methods().items():
+            table.add_row(
+                method_name,
+                method["package"],
+                method["version"],
+                method["path"],
+                ":heavy_check_mark:" if method["enabled"] else ":cross_mark:",
+            )
+        console.print(table)
 
     loop.run_sync(_list_discovery)
 
@@ -190,10 +219,6 @@ def list_discovery():
 def version():
     """Show the daskctl version."""
     click.echo(__version__)
-
-
-def format_output(headers, output):
-    click.echo(format_table(output, headers=[h.upper() for h in headers]))
 
 
 def daskctl():

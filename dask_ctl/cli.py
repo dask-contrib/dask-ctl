@@ -11,7 +11,7 @@ from distributed.cli.utils import check_python_3
 from distributed.utils import typename
 
 from . import __version__
-from .utils import loop, format_table
+from .utils import loop
 from .discovery import (
     discover_clusters,
     discover_cluster_names,
@@ -219,10 +219,6 @@ def list_discovery():
 def version():
     """Show the daskctl version."""
     click.echo(__version__)
-
-
-def format_output(headers, output):
-    click.echo(format_table(output, headers=[h.upper() for h in headers]))
 
 
 def daskctl():

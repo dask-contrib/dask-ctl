@@ -178,24 +178,6 @@ def delete(
         click.echo(f"Deleted cluster {name}.")
 
 
-@cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
-def snippet(
-    name,
-):
-    """Show a code snippet for connecting to a cluster.
-
-    NAME is the name of the cluster to show the snippet for.
-
-    """
-    try:
-        delete_cluster(name)
-    except Exception as e:
-        click.echo(e)
-    else:
-        click.echo(f"Deleted cluster {name}.")
-
-
 @cli.group()
 def discovery():
     """Discovery commands."""

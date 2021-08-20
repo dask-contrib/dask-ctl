@@ -1,6 +1,8 @@
 import importlib
 from typing import List
 
+from dask.widgets import get_template
+from dask.utils import typename
 from distributed.deploy.cluster import Cluster
 from .discovery import discover_cluster_names, discover_clusters
 from .spec import load_spec
@@ -103,6 +105,43 @@ def get_cluster(name: str) -> Cluster:
         raise RuntimeError("No such cluster %s", name)
 
     return loop.run_sync(_get_cluster)
+
+
+def get_snippet(name: str) -> str:
+    """Get a code snippet for connecting to a cluster.
+
+    Parameters
+    ----------
+    name
+        Name of cluster to get a snippet for.
+
+    Returns
+    -------
+    str
+        Code snippet.
+
+    Examples
+    --------
+    >>> from dask.distributed import LocalCluster  # doctest: +SKIP
+    >>> cluster = LocalCluster(scheduler_port=8786)  # doctest: +SKIP
+    >>> get_snippet("proxycluster-8786")  # doctest: +SKIP
+    from dask.distributed import Client
+    from dask_ctl.proxy import ProxyCluster
+
+    cluster = ProxyCluster.from_name("proxycluster-8786")
+    client = Client(cluster)
+
+    """
+
+    cluster = get_cluster(name)
+    try:
+        return cluster.get_snippet()
+    except AttributeError:
+        *module, cm = typename(type(cluster)).split(".")
+        module = ".".join(module)
+        return get_template("snippet.py.j2").render(
+            module=module, cm=cm, name=name, cluster=cluster
+        )
 
 
 def scale_cluster(name: str, n_workers: int) -> None:

@@ -14,5 +14,14 @@ from .lifecycle import (
     scale_cluster,
     delete_cluster,
     list_clusters,
+    get_snippet,
 )
 from .proxy import ProxyCluster
+
+import os.path
+
+from dask.widgets import TEMPLATE_PATHS
+
+TEMPLATE_PATHS.append(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "widgets", "templates")
+)

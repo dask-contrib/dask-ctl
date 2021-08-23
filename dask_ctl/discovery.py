@@ -1,9 +1,12 @@
+import asyncio
 from typing import Callable, Dict, AsyncIterator, Tuple
 from contextlib import suppress
 import pkg_resources
 import warnings
 
 from distributed.deploy.spec import SpecCluster
+
+from .utils import AsyncTimedIterable
 
 
 def list_discovery_methods() -> Dict[str, Callable]:
@@ -81,12 +84,17 @@ async def discover_cluster_names(
     for discovery_method in discovery_methods:
         try:
             if discovery is None or discovery == discovery_method:
-                async for cluster_name, cluster_class in discovery_methods[
-                    discovery_method
-                ]["discover"]():
-                    yield (cluster_name, cluster_class)
-                if discovery is not None:
-                    return
+                try:
+                    async for cluster_name, cluster_class in AsyncTimedIterable(
+                        discovery_methods[discovery_method]["discover"](), 5
+                    ):
+                        yield (cluster_name, cluster_class)
+                    if discovery is not None:
+                        return
+                except asyncio.TimeoutError:
+                    warnings.warn(
+                        f"Cluster discovery for {discovery_method} timed out."
+                    )
         except Exception as e:  # We are calling code that is out of our control here, so handling broad exceptions
             if discovery is None:
                 warnings.warn(f"Cluster discovery for {discovery_method} failed.")

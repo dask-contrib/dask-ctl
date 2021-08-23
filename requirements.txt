@@ -1,5 +1,5 @@
 click
-dask
+dask>=2021.08.1
 distributed
 rich
 tornado

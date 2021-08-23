@@ -1,0 +1,5 @@
+from dask.distributed import Client
+from {{ module }} import {{ cm }}
+
+cluster = {{ cm }}.from_name("{{ name }}")
+client = Client(cluster)

@@ -1,8 +1,10 @@
 import datetime
+import warnings
 
 import click
 from rich.console import Console
 from rich.table import Table
+from rich.syntax import Syntax
 from rich import box
 
 from dask.utils import format_bytes, format_time_ago
@@ -17,13 +19,14 @@ from .discovery import (
     discover_cluster_names,
     list_discovery_methods,
 )
-from .lifecycle import (
-    create_cluster,
-    scale_cluster,
-    delete_cluster,
-)
+from .lifecycle import create_cluster, scale_cluster, delete_cluster, get_snippet
 
 console = Console()
+
+# Only show warnings from dask_ctl
+warnings.filterwarnings("ignore", module="^((?!dask_ctl).)*$")
+# Customize warning output on the CLI
+warnings.showwarning = lambda msg, *_: console.print(f":warning: {msg}", style="yellow")
 
 
 def autocomplete_cluster_names(ctx, args, incomplete):
@@ -155,6 +158,7 @@ def scale(name, n_workers):
         scale_cluster(name, n_workers)
     except Exception as e:
         click.echo(e)
+        raise click.Abort()
     else:
         click.echo(f"Scaled cluster {name} to {n_workers} workers.")
 
@@ -174,8 +178,34 @@ def delete(
         delete_cluster(name)
     except Exception as e:
         click.echo(e)
+        raise click.Abort()
     else:
         click.echo(f"Deleted cluster {name}.")
+
+
+@cluster.command()
+@click.argument("name", autocompletion=autocomplete_cluster_names)
+def snippet(
+    name,
+):
+    """Get code snippet for connecting to a cluster.
+
+    NAME is the name of the cluster to get a snippet for.
+    Run `daskctl list` for all available options.
+
+    """
+    try:
+        snip = get_snippet(name)
+        snip = Syntax(
+            snip,
+            "python",
+            theme="ansi_dark",  # Uses existing terminal theme
+            background_color="default",  # Don't change background color
+        )
+    except Exception as e:
+        click.echo(e)
+    else:
+        console.print(snip)
 
 
 @cli.group()

@@ -23,6 +23,8 @@ Lifecycle
 
 .. autofunction:: list_clusters
 
+.. autofunction:: get_snippet
+
 Discovery
 ---------
 

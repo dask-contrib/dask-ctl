@@ -111,13 +111,13 @@ def list(discovery=None):
                             except KeyError:
                                 created = "Unknown"
 
-                            status = cluster.status.name.title()
+                            cluster_status = cluster.status.name.title()
                             if cluster.status == Status.created:
-                                status = f"[yellow]{status}[/yellow]"
+                                cluster_status = f"[yellow]{cluster_status}[/yellow]"
                             elif cluster.status == Status.running:
-                                status = f"[green]{status}[/green]"
+                                cluster_status = f"[green]{cluster_status}[/green]"
                             else:
-                                status = f"[red]{status}[/red]"
+                                cluster_status = f"[red]{cluster_status}[/red]"
 
                             table.add_row(
                                 cluster.name,
@@ -128,7 +128,7 @@ def list(discovery=None):
                                 str(sum(w["nthreads"] for w in workers)),
                                 format_bytes(sum([w["memory_limit"] for w in workers])),
                                 created,
-                                status,
+                                cluster_status,
                             )
                     except Exception:
                         if discovery is None:

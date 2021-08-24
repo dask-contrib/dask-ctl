@@ -1,11 +1,13 @@
 import datetime
+from time import sleep
 import warnings
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
 from rich.syntax import Syntax
-from rich import box
+from rich.progress import Progress, BarColumn
 
 from dask.utils import format_bytes, format_time_ago
 from distributed.core import Status
@@ -19,7 +21,7 @@ from .discovery import (
     discover_cluster_names,
     list_discovery_methods,
 )
-from .lifecycle import create_cluster, scale_cluster, delete_cluster, get_snippet
+from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
 
 console = Console()
 
@@ -158,13 +160,58 @@ def scale(name, n_workers):
     N_WORKERS is the number of workers to scale to.
 
     """
+
     try:
-        scale_cluster(name, n_workers)
+        with Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            "[progress.percentage]{task.fields[workers]}/{task.fields[n_workers]}",
+            transient=True,
+        ) as progress:
+            scale_task = progress.add_task(
+                "[blue]Preparing to scale...", start=False, workers="..", n_workers=".."
+            )
+            cluster = get_cluster(name)
+            start_workers = len(cluster.scheduler_info["workers"])
+            diff_workers = n_workers - start_workers
+
+            if diff_workers != 0:
+                progress.update(
+                    scale_task,
+                    workers=start_workers,
+                    n_workers=n_workers,
+                    total=abs(diff_workers),
+                )
+                if diff_workers > 0:
+                    progress.update(scale_task, description="[green]Adding workers...")
+                elif diff_workers < 0:
+                    progress.update(scale_task, description="[red]Removing workers...")
+                progress.start_task(scale_task)
+
+                cluster.scale(n_workers)
+
+                while len(cluster.scheduler_info["workers"]) != n_workers:
+                    sleep(0.1)
+                    progress.update(
+                        scale_task,
+                        completed=abs(
+                            len(cluster.scheduler_info["workers"]) - start_workers
+                        ),
+                        workers=len(cluster.scheduler_info["workers"]),
+                    )
+
+                progress.update(scale_task, completed=diff_workers)
+                progress.console.print(
+                    f"Scaled cluster [blue]{name}[/blue] to {n_workers} workers."
+                )
+            else:
+                progress.console.print(
+                    f"Cluster [blue]{name}[/blue] already at {n_workers}, nothing to do."
+                )
+
     except Exception as e:
-        click.echo(e)
+        console.print(e)
         raise click.Abort()
-    else:
-        click.echo(f"Scaled cluster {name} to {n_workers} workers.")
 
 
 @cluster.command()

@@ -4,6 +4,7 @@ from contextlib import suppress
 import pkg_resources
 import warnings
 
+import dask.config
 from distributed.deploy.spec import SpecCluster
 
 from .utils import AsyncTimedIterable
@@ -44,7 +45,9 @@ def list_discovery_methods() -> Dict[str, Callable]:
                         "package": ep.dist.key,
                         "version": ep.dist.version,
                         "path": ep.dist.location,
-                        "enabled": True,  # TODO allow disabling
+                        "enabled": (
+                            ep.name not in dask.config.get("ctl.disable_discovery")
+                        ),
                     }
                 }
             )
@@ -83,7 +86,9 @@ async def discover_cluster_names(
     discovery_methods = list_discovery_methods()
     for discovery_method in discovery_methods:
         try:
-            if discovery is None or discovery == discovery_method:
+            if discovery_methods[discovery_method]["enabled"] and (
+                discovery is None or discovery == discovery_method
+            ):
                 try:
                     async for cluster_name, cluster_class in AsyncTimedIterable(
                         discovery_methods[discovery_method]["discover"](), 5

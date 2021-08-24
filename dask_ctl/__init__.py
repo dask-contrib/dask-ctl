@@ -3,6 +3,8 @@ from ._version import get_versions
 __version__ = get_versions()["version"]
 del get_versions
 
+from . import config
+
 from .discovery import (
     discover_cluster_names,
     discover_clusters,

@@ -14,9 +14,14 @@ from dask_ctl import __version__
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import dask
+import os
+import sys
+
+# Add the Dask config extension
+sys.path.insert(
+    0, os.path.join(os.path.abspath(dask.__path__[0]), "..", "docs", "source", "ext")
+)
 
 
 # -- Project information -----------------------------------------------------
@@ -36,6 +41,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx_click",
     "sphinx.ext.autosummary",
+    "dask_config_sphinx_ext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -22,6 +22,7 @@ from .discovery import (
     list_discovery_methods,
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
+from . import config  # noqa
 
 console = Console()
 
@@ -93,9 +94,12 @@ def list(discovery=None):
         table.add_column("Status")
 
         with console.status("[bold green]Discovering clusters...") as status:
-            for discovery_method in list_discovery_methods():
+            discovery_methods = list_discovery_methods()
+            for discovery_method in discovery_methods:
                 status.update(f"[bold green]Discovering {discovery_method}s...")
-                if discovery is None or discovery == discovery_method:
+                if discovery_methods[discovery_method]["enabled"] and (
+                    discovery is None or discovery == discovery_method
+                ):
                     try:
                         async for cluster in discover_clusters(
                             discovery=discovery_method
@@ -294,6 +298,26 @@ def list_discovery():
         console.print(table)
 
     loop.run_sync(_list_discovery)
+
+
+@discovery.command(name="enable")
+@click.argument("name")
+def enable_discovery(name):
+    """Enable a discovery method."""
+    console.print(
+        "To enable discovery methods please update your configuration.\n"
+        "See <TODO add docs link>"
+    )
+
+
+@discovery.command(name="disable")
+@click.argument("name")
+def disable_discovery(name):
+    """Disable a discovery method."""
+    console.print(
+        "To disable discovery methods please update your configuration.\n"
+        "See <TODO add docs link>"
+    )
 
 
 @cli.command()

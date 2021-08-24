@@ -1,0 +1,12 @@
+properties:
+
+  ctl:
+    type: object
+    properties:
+
+      disable_discovery:
+        type: list
+        items:
+          type: string
+        description: |
+          Discovery methods to disable when discovering clusters.

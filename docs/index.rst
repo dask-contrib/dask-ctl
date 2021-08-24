@@ -39,6 +39,7 @@ Installation
 
    cli.rst
    api.rst
+   configuration.rst
    spec.rst
 
 .. toctree::

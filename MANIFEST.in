@@ -1,7 +1,15 @@
+recursive-include dask_ctl *.py
+recursive-include dask_ctl *.j2
+recursive-include dask_ctl *.yaml
+recursive-include docs *.rst
+recursive-exclude dask_ctl **/tests/*
+
+include setup.py
 include README.rst
 include LICENSE
+include MANIFEST.in
 include requirements.txt
-graft dask_ctl
-recursive-exclude * *.py[co]
+
+prune docs/_build
 include versioneer.py
 include dask_ctl/_version.py

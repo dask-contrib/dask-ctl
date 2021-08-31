@@ -112,7 +112,7 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     Instead we can construct ProxyCluster objects which allow limited interactivity with a local cluster in the same way
     you would with a regular cluster, allowing you to retrieve logs, get stats, etc.
 
-    This doscovery works by checking all local services listening on ports, then attempting to connect a
+    This discovery works by checking all local services listening on ports, then attempting to connect a
     :class:`dask.distributed.Client` to it. If it is successful we assume it is a cluster that we can represent.
 
     Notes

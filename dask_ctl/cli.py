@@ -9,10 +9,9 @@ from rich.table import Table
 from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
-from dask.utils import format_bytes, format_time_ago
+from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
 from distributed.cli.utils import check_python_3
-from distributed.utils import typename
 
 from . import __version__
 from .utils import loop
@@ -22,6 +21,7 @@ from .discovery import (
     list_discovery_methods,
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
+from .tui import DaskCtlTUI
 from . import config  # noqa
 
 console = Console()
@@ -46,7 +46,12 @@ def autocomplete_cluster_names(ctx, args, incomplete):
 @click.group()
 def cli():
     """daskctl controls Dask clusters."""
-    pass
+
+
+@cli.command()
+def ui():
+    """Open the Dask Control TUI."""
+    DaskCtlTUI.run()
 
 
 @cli.group()

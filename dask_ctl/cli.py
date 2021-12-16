@@ -49,9 +49,10 @@ def cli():
 
 
 @cli.command()
-def ui():
+@click.option("--debug/--no-debug", default=False)
+def ui(debug):
     """Open the Dask Control TUI."""
-    DaskCtlTUI.run()
+    DaskCtlTUI.run(log="textual_debug.log" if debug else None)
 
 
 @cli.group()

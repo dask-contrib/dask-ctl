@@ -1,17 +1,30 @@
 import asyncio
+import copy
 
-from textual.app import App, DockLayout
+from textual.app import App, DockLayout, DockView
+from textual.views import WindowView
 from textual.widgets import Header
+from textual.binding import BindingStack, Bindings
 
 from .widgets import Logo, Info, ClusterTable, Help
 from .prompt import CommandPrompt
+from .events import ClusterSelected
+
+DEFAULT_BINDINGS = Bindings()
+DEFAULT_BINDINGS.bind("q", "quit", "Quit")
+DEFAULT_BINDINGS.bind("ctrl+c", "quit", show=False, allow_forward=False)
 
 
 class DaskCtlTUI(App):
+    clusters = []
+    cluster = None
+
     async def on_load(self, event):
-        await self.bind("q", "quit", "Quit")
-        await self.bind("escape", "blur_all")
-        await self.bind(":", "focus_prompt")
+        pass
+
+    async def on_mount(self) -> None:
+        """Call after terminal goes in to application mode"""
+        await self.load_view_main()
 
     async def action_blur_all(self):
         await self.set_focus(None)
@@ -19,22 +32,24 @@ class DaskCtlTUI(App):
     async def action_focus_prompt(self):
         await self.set_focus(self.command_prompt)
 
+    async def action_back(self):
+        await self.load_view_main()
+
     async def unload_view(self) -> None:
         if isinstance(self.view.layout, DockLayout):
             self.view.layout.docks.clear()
         self.view.widgets.clear()
 
-    async def load_view_splash(self) -> None:
-        await self.view.dock(Logo(), edge="top")
-
-        async def load_main_view():
-            await asyncio.sleep(2)
-            await self.unload_view()
-            await self.load_view_main()
-
-        await self.call_later(load_main_view)
-
     async def load_view_main(self) -> None:
+        await self.unload_view()
+
+        # Set bindings
+        bindings = copy.copy(DEFAULT_BINDINGS)
+        bindings.bind("escape", "blur_all", show=False)
+        bindings.bind(":", "focus_prompt", "New command")
+        self.bindings = bindings
+
+        # Draw widgets
         header = await self.view.dock_grid(edge="top", name="header")
 
         header.add_column(fraction=1, name="left", min_size=20)
@@ -63,6 +78,24 @@ class DaskCtlTUI(App):
             area5=self.command_prompt,
         )
 
-    async def on_mount(self) -> None:
-        """Call after terminal goes in to application mode"""
-        await self.load_view_splash()
+    async def load_view_cluster(self, cluster) -> None:
+        await self.unload_view()
+        self.cluster = cluster
+
+        # Set bindings
+        bindings = copy.copy(DEFAULT_BINDINGS)
+        bindings.bind("escape", "back")
+        self.bindings = bindings
+
+        await self.view.dock(Logo(), edge="top")
+
+    async def handle_prompt_on_submit(self, message) -> None:
+        self.log(f"Handling prompt command '{message.command}'")
+        if message.command == "connect":
+            await self.load_view_cluster(None)
+        else:
+            self.command_prompt.out = "Unknown command"
+
+    async def on_cluster_selected(self, event: ClusterSelected):
+        self.log("Cluster selected")
+        await self.load_view_cluster(event.cluster)

@@ -11,14 +11,12 @@ from textual.reactive import Reactive
 from textual.widget import Widget
 
 from .. import __version__
+from .events import ClusterSelected
 import dask
 import distributed
 
 
 class Logo(Widget):
-
-    mouse_over = Reactive(False)
-
     def render(self) -> Text:
         return Text(
             """                ╔
@@ -35,9 +33,6 @@ class Logo(Widget):
 
 
 class Info(Widget):
-
-    mouse_over = Reactive(False)
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.versions = {
@@ -56,26 +51,16 @@ class Info(Widget):
 
 
 class Help(Widget):
-
-    mouse_over = Reactive(False)
-
     def render(self) -> Text:
-        commands = {
-            ":": "new command",
-            "q": "quit",
-            "esc": "drop focus",
-        }
         outs = [("Commands", "bold"), "\n"]
-        for command in commands:
-            outs.append((command, "bold on blue"))
-            outs.append(f" {commands[command]}\n")
+        for binding in self.app.bindings.shown_keys:
+            key = binding.key if binding.key_display is None else binding.key_display
+            outs.append((key, "bold orange3"))
+            outs.append(f" {binding.description}\n")
         return Text.assemble(*outs)
 
 
 class CommandPrompt(Widget):
-
-    mouse_over = Reactive(False)
-
     def render(self) -> Prompt:
         return Prompt()
 
@@ -116,9 +101,12 @@ class ClusterTable(Widget):
         if event.key == "up":
             if self.selected > 0:
                 self.selected -= 1
-        if event.key == "down":
+        elif event.key == "down":
             if self.selected + 1 < len(self.clusters):
                 self.selected += 1
+        elif event.key == "enter":
+            await self.post_message(ClusterSelected(self, None))
+        self.app.refresh()
 
     def render(self) -> Panel:
         self.table = Table(box=box.SIMPLE, expand=True, style="white")
@@ -135,6 +123,7 @@ class ClusterTable(Widget):
         for cluster in self.clusters:
             self.table.add_row(*cluster)
 
-        self.table.rows[self.selected].style = "black on blue"
+        if len(self.table.rows):
+            self.table.rows[self.selected].style = "black on blue"
 
         return Panel(self.table, style="blue", title="Clusters", title_align="left")

@@ -14,6 +14,7 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 from textual import events
+from textual.message_pump import MessagePump
 from textual.reactive import Reactive
 from textual.widget import Widget
 from textual.message import Message
@@ -22,19 +23,23 @@ from textual.message import Message
 class PromptOnChange(Message, bubble=True):
     """Emitted when the value of an input changes"""
 
-    pass
+    name = "prompt_on_change"
 
 
 class PromptOnFocus(Message, bubble=True):
     """Emitted when the input becomes focused"""
 
-    pass
+    name = "prompt_on_focus"
 
 
 class PromptOnSubmit(Message, bubble=True):
     """Emitted when the input is submitted"""
 
-    pass
+    name = "prompt_on_submit"
+
+    def __init__(self, sender: MessagePump, command: str) -> None:
+        self.command = command
+        super().__init__(sender)
 
 
 class CommandPrompt(Widget):
@@ -77,6 +82,7 @@ class CommandPrompt(Widget):
     """
 
     value: Reactive[str] = Reactive("")
+    out: Reactive[str] = Reactive("")
     cursor: Tuple[str, Style] = (
         "|",
         Style(
@@ -266,7 +272,6 @@ class CommandPrompt(Widget):
             await self._emit_on_submit(self.value)
             self.value = ""
             await self.app.set_focus(None)
-            self.out = "Unknown command"
 
         elif event.key in string.printable:
             if self._cursor_position == 0:
@@ -293,4 +298,4 @@ class CommandPrompt(Widget):
         await self.emit(PromptOnFocus(self))
 
     async def _emit_on_submit(self, value) -> None:
-        await self.emit(PromptOnSubmit(self))
+        await self.emit(PromptOnSubmit(self, command=value))

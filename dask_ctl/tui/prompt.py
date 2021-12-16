@@ -83,6 +83,8 @@ class CommandPrompt(Widget):
 
     value: Reactive[str] = Reactive("")
     out: Reactive[str] = Reactive("")
+    history: Reactive[list] = Reactive([])
+    history_cursor = Reactive(0)
     cursor: Tuple[str, Style] = (
         "|",
         Style(
@@ -271,8 +273,24 @@ class CommandPrompt(Widget):
         elif event.key == "enter":
             event.stop()
             await self._emit_on_submit(self.value)
+            if not self.history or self.history[-1] != self.value:
+                self.history.append(self.value)
+            self.history_cursor = 0
             self.value = ""
             await self.app.set_focus(None)
+
+        elif event.key == "up":
+            if len(self.history) > self.history_cursor:
+                self.history_cursor += 1
+                self.value = self.history[-self.history_cursor]
+
+        elif event.key == "down":
+            if self.history_cursor > 0:
+                self.history_cursor -= 1
+                if self.history_cursor == 0:
+                    self.value = ""
+                else:
+                    self.value = self.history[-self.history_cursor]
 
         elif event.key in string.printable:
             if self._cursor_position == 0:

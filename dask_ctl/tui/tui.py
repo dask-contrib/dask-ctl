@@ -147,19 +147,18 @@ class DaskCtlTUI(App):
     async def handle_prompt_on_submit(self, message) -> None:
         self.log(f"Handling prompt command '{message.command}'")
 
-        command, *params = message.command.split(" ")
+        command, *params = message.command.strip().split(" ")
         method_name = f"command_{command}"
 
-        method = getattr(self, method_name, None)
-        if method is not None:
-            if count_parameters(method) != len(params):
-                self.command_prompt.out = (
-                    f"Error: '{command}' accepts {count_parameters(method)} parameters"
-                )
+        if command:
+            method = getattr(self, method_name, None)
+            if method is not None:
+                if count_parameters(method) != len(params):
+                    self.command_prompt.out = f"Error: '{command}' accepts {count_parameters(method)} parameters"
+                else:
+                    self.command_prompt.out = await invoke(method, *params)
             else:
-                self.command_prompt.out = await invoke(method, *params)
-        else:
-            self.command_prompt.out = f"Unknown command '{command}'"
+                self.command_prompt.out = f"Unknown command '{command}'"
 
     async def command_quit(self):
         """Quit"""

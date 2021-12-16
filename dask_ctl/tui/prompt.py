@@ -282,15 +282,15 @@ class CommandPrompt(Widget):
         elif event.key == "up":
             if len(self.history) > self.history_cursor:
                 self.history_cursor += 1
-                self.value = self.history[-self.history_cursor]
+                self.set_value(self.history[-self.history_cursor])
 
         elif event.key == "down":
             if self.history_cursor > 0:
                 self.history_cursor -= 1
                 if self.history_cursor == 0:
-                    self.value = ""
+                    self.set_value("")
                 else:
-                    self.value = self.history[-self.history_cursor]
+                    self.set_value(self.history[-self.history_cursor])
 
         elif event.key in string.printable:
             if self._cursor_position == 0:
@@ -308,6 +308,10 @@ class CommandPrompt(Widget):
                 self._cursor_position += 1
 
             await self._emit_on_change(event)
+
+    def set_value(self, value):
+        self.value = value
+        self._cursor_position = len(self.value)
 
     async def _emit_on_change(self, event: events.Key) -> None:
         event.stop()

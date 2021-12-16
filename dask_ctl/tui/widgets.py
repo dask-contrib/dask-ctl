@@ -109,6 +109,10 @@ class ClusterTable(Widget):
         super().__init__(*args, **kwargs)
         self.table = Table()
 
+    @property
+    def selected_cluster(self):
+        return list(self.table.columns[0].cells)[self.selected]
+
     async def on_mount(self, event):
         self.table = await generate_table()
         self.table.expand = True
@@ -122,9 +126,7 @@ class ClusterTable(Widget):
             if self.selected + 1 < len(self.table.rows):
                 self.selected += 1
         elif event.key == "enter":
-            await self.post_message(
-                ClusterSelected(self, list(self.table.columns[0].cells)[self.selected])
-            )
+            await self.post_message(ClusterSelected(self, self.selected_cluster))
         self.app.refresh()
 
     def render(self) -> Panel:

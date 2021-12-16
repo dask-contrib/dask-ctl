@@ -33,7 +33,6 @@ class DaskCtlTUI(App):
     commands = []
 
     async def on_load(self, event):
-        # self.bind_command("quit", "Quit", alternatives=["q", "wq", "shutdown", "exit"])
         pass
 
     async def on_mount(self) -> None:
@@ -41,9 +40,19 @@ class DaskCtlTUI(App):
         await self.load_view_main()
 
     async def action_blur_all(self):
+        self.command_prompt.set_value("")
         await self.set_focus(None)
 
     async def action_focus_prompt(self):
+        self.command_prompt.set_value("")
+        await self.set_focus(self.command_prompt)
+
+    async def action_scale(self):
+        self.command_prompt.set_value(f"scale {self.cluster_table.selected_cluster} ")
+        await self.set_focus(self.command_prompt)
+
+    async def action_close(self):
+        self.command_prompt.set_value(f"close {self.cluster_table.selected_cluster}")
         await self.set_focus(self.command_prompt)
 
     async def action_refresh(self):
@@ -63,6 +72,8 @@ class DaskCtlTUI(App):
         # Set bindings
         bindings = copy.deepcopy(DEFAULT_BINDINGS)
         bindings.bind("escape", "blur_all", show=False)
+        bindings.bind("s", "scale", "Scale cluster")
+        bindings.bind("c", "close", "Close cluster")
         bindings.bind(":", "focus_prompt", "New command")
         self.bindings = bindings
 
@@ -196,6 +207,3 @@ class DaskCtlTUI(App):
     async def on_cluster_selected(self, event: ClusterSelected):
         self.log(f"Cluster selected {event.cluster_name}")
         await self.load_view_cluster(event.cluster_name)
-
-    # def bind_command(self, command, description=None, alternatives=None):
-    #     self.commands.append({"[command, *alternatives], description)

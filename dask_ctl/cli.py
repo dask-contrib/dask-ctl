@@ -21,6 +21,7 @@ from .discovery import (
     list_discovery_methods,
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
+from .renderables import generate_table
 from .tui import DaskCtlTUI
 from . import config  # noqa
 
@@ -88,70 +89,11 @@ def list(discovery=None):
     """
 
     async def _list():
-        table = Table(box=box.SIMPLE)
-        table.add_column("Name", style="cyan", no_wrap=True)
-        table.add_column("Address")
-        table.add_column("Type")
-        table.add_column("Discovery")
-        table.add_column("Workers")
-        table.add_column("Threads")
-        table.add_column("Memory")
-        table.add_column("Created")
-        table.add_column("Status")
 
         with console.status("[bold green]Discovering clusters...") as status:
-            discovery_methods = list_discovery_methods()
-            for discovery_method in discovery_methods:
-                status.update(f"[bold green]Discovering {discovery_method}s...")
-                if discovery_methods[discovery_method]["enabled"] and (
-                    discovery is None or discovery == discovery_method
-                ):
-                    try:
-                        async for cluster in discover_clusters(
-                            discovery=discovery_method
-                        ):
-                            try:
-                                workers = cluster.scheduler_info["workers"].values()
-                            except KeyError:
-                                workers = []
-                            try:
-                                created = format_time_ago(
-                                    datetime.datetime.fromtimestamp(
-                                        float(cluster.scheduler_info["started"])
-                                    )
-                                )
-                            except KeyError:
-                                created = "Unknown"
-
-                            cluster_status = cluster.status.name.title()
-                            if cluster.status == Status.created:
-                                cluster_status = f"[yellow]{cluster_status}[/yellow]"
-                            elif cluster.status == Status.running:
-                                cluster_status = f"[green]{cluster_status}[/green]"
-                            else:
-                                cluster_status = f"[red]{cluster_status}[/red]"
-
-                            table.add_row(
-                                cluster.name,
-                                cluster.scheduler_address,
-                                typename(type(cluster)),
-                                discovery_method,
-                                str(len(workers)),
-                                str(sum(w["nthreads"] for w in workers)),
-                                format_bytes(sum([w["memory_limit"] for w in workers])),
-                                created,
-                                cluster_status,
-                            )
-                    except Exception:
-                        if discovery is None:
-                            console.print(
-                                f":warning: Discovery {discovery_method} failed. "
-                                f"Run `daskctl cluster list {discovery_method}` for more info.",
-                                style="yellow",
-                            )
-                        else:
-                            console.print_exception(show_locals=True)
-                            raise click.Abort()
+            table = await generate_table(
+                discovery=discovery, status=status, console=console
+            )
 
         console.print(table)
 

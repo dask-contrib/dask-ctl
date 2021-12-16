@@ -1,6 +1,5 @@
 import sys
 
-from rich import box
 from rich.text import Text
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -10,7 +9,10 @@ from textual import events
 from textual.reactive import Reactive
 from textual.widget import Widget
 
+from dask.utils import format_bytes, typename
+
 from .. import __version__
+from ..renderables import generate_table, get_created, get_status, get_workers
 from .events import ClusterSelected
 import dask
 import distributed
@@ -44,15 +46,36 @@ class Info(Widget):
 
     def render(self) -> Text:
         outs = []
+        outs.append(("Dask Control\n", "bold blue"))
         for version in self.versions:
             outs.append((f"{version}: ", "bold orange3"))
             outs.append(f"{self.versions[version]}\n")
         return Text.assemble(*outs)
 
 
-class Help(Widget):
+class ClusterInfo(Widget):
     def render(self) -> Text:
-        outs = [("Commands", "bold"), "\n"]
+        workers = get_workers(self.app.cluster)
+        data = {
+            "name": self.app.cluster.name,
+            "address": self.app.cluster.scheduler_address,
+            "type": typename(type(self.app.cluster)),
+            "workers": str(len(workers)),
+            "threads": str(sum(w["nthreads"] for w in workers)),
+            "memory": format_bytes(sum([w["memory_limit"] for w in workers])),
+            "created": get_created(self.app.cluster),
+            "status": get_status(self.app.cluster),
+        }
+        outs = []
+        for item in data:
+            outs.append((f"{item}: ", "bold orange3"))
+            outs.append(f"{data[item]}\n")
+        return Text.assemble(*outs)
+
+
+class KeyBindings(Widget):
+    def render(self) -> Text:
+        outs = [("Key bindings", "bold"), "\n"]
         for binding in self.app.bindings.shown_keys:
             key = binding.key if binding.key_display is None else binding.key_display
             outs.append((key, "bold orange3"))
@@ -71,58 +94,27 @@ class ClusterTable(Widget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.table = None
-        self.clusters = [
-            [
-                "FooCluster",
-                "tcp://localhost:8786",
-                "LocalCluster",
-                "FooBar",
-                "100",
-                "100",
-                "2TB",
-                "Just Now",
-                "Running",
-            ],
-            [
-                "BarCluster",
-                "tcp://localhost:6786",
-                "LocalCluster",
-                "FooBar",
-                "108",
-                "108",
-                "2TB",
-                "Just Now",
-                "Running",
-            ],
-        ]
+        self.table = Table()
+
+    async def on_mount(self, event):
+        self.table = await generate_table()
+        self.table.expand = True
+        self.table.style = "white"
 
     async def on_key(self, event: events.Key) -> None:
         if event.key == "up":
             if self.selected > 0:
                 self.selected -= 1
         elif event.key == "down":
-            if self.selected + 1 < len(self.clusters):
+            if self.selected + 1 < len(self.app.clusters):
                 self.selected += 1
         elif event.key == "enter":
-            await self.post_message(ClusterSelected(self, None))
+            await self.post_message(
+                ClusterSelected(self, list(self.table.columns[0].cells)[self.selected])
+            )
         self.app.refresh()
 
     def render(self) -> Panel:
-        self.table = Table(box=box.SIMPLE, expand=True, style="white")
-        self.table.add_column("Name", style="cyan", no_wrap=True)
-        self.table.add_column("Address")
-        self.table.add_column("Type")
-        self.table.add_column("Discovery")
-        self.table.add_column("Workers")
-        self.table.add_column("Threads")
-        self.table.add_column("Memory")
-        self.table.add_column("Created")
-        self.table.add_column("Status")
-
-        for cluster in self.clusters:
-            self.table.add_row(*cluster)
-
         if len(self.table.rows):
             self.table.rows[self.selected].style = "black on blue"
 

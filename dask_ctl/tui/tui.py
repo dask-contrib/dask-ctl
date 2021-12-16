@@ -6,11 +6,19 @@ from textual.views import WindowView
 from textual.widgets import Header, Placeholder
 from textual.binding import BindingStack, Bindings
 from textual.reactive import Reactive
+from textual._callback import invoke, count_parameters
 
 from dask_ctl.proxy import ProxyCluster
 
 from ..lifecycle import get_cluster
-from .widgets import Logo, Info, ClusterTable, KeyBindings, ClusterInfo
+from .widgets import (
+    Logo,
+    Info,
+    ClusterTable,
+    KeyBindings,
+    ClusterInfo,
+    CommandReference,
+)
 from .prompt import CommandPrompt
 from .events import ClusterSelected
 
@@ -22,8 +30,10 @@ DEFAULT_BINDINGS.bind("ctrl+c", "quit", show=False, allow_forward=False)
 
 class DaskCtlTUI(App):
     cluster = None
+    commands = []
 
     async def on_load(self, event):
+        # self.bind_command("quit", "Quit", alternatives=["q", "wq", "shutdown", "exit"])
         pass
 
     async def on_mount(self) -> None:
@@ -51,7 +61,7 @@ class DaskCtlTUI(App):
         await self.unload_view()
 
         # Set bindings
-        bindings = copy.copy(DEFAULT_BINDINGS)
+        bindings = copy.deepcopy(DEFAULT_BINDINGS)
         bindings.bind("escape", "blur_all", show=False)
         bindings.bind(":", "focus_prompt", "New command")
         self.bindings = bindings
@@ -59,8 +69,9 @@ class DaskCtlTUI(App):
         # Draw widgets
         grid = await self.view.dock_grid(edge="top", name="header")
 
-        grid.add_column(fraction=1, name="left", min_size=20)
-        grid.add_column(fraction=1, name="centre", min_size=20)
+        grid.add_column(fraction=2, name="left", min_size=20)
+        grid.add_column(fraction=1, name="lcentre", min_size=20)
+        grid.add_column(fraction=1, name="rcentre", min_size=20)
         grid.add_column(size=20, name="right")
 
         grid.add_row(size=10, name="top")
@@ -68,21 +79,24 @@ class DaskCtlTUI(App):
         grid.add_row(size=3, name="bottom")
 
         grid.add_areas(
-            area1="left,top",
-            area2="centre,top",
-            area3="right,top",
-            area4="left-start|right-end,middle",
-            area5="left-start|right-end,bottom",
+            info="left,top",
+            key_bindings="lcentre,top",
+            command_reference="rcentre,top",
+            logo="right,top",
+            cluster_table="left-start|right-end,middle",
+            command_prompt="left-start|right-end,bottom",
         )
 
         self.command_prompt = CommandPrompt(name="prompt")
+        self.cluster_table = ClusterTable()
 
         grid.place(
-            area1=Info(name="info"),
-            area2=KeyBindings(name="help"),
-            area3=Logo(name="logo"),
-            area4=ClusterTable(),
-            area5=self.command_prompt,
+            info=Info(name="info"),
+            key_bindings=KeyBindings(name="help"),
+            command_reference=CommandReference(),
+            logo=Logo(name="logo"),
+            cluster_table=self.cluster_table,
+            command_prompt=self.command_prompt,
         )
 
     async def load_view_cluster(self, cluster) -> None:
@@ -90,7 +104,7 @@ class DaskCtlTUI(App):
         self.cluster = await get_cluster(cluster, asynchronous=True)
 
         # Set bindings
-        bindings = copy.copy(DEFAULT_BINDINGS)
+        bindings = copy.deepcopy(DEFAULT_BINDINGS)
         bindings.bind("escape", "back", "Back to cluster list")
         self.bindings = bindings
 
@@ -125,22 +139,64 @@ class DaskCtlTUI(App):
             progress=Placeholder(name="progress"),
         )
 
+    async def on_key(self, event):
+        """If prompt not focussed send all keys to the table."""
+        if self.focused != self.command_prompt:
+            await self.cluster_table.forward_event(event)
+
     async def handle_prompt_on_submit(self, message) -> None:
         self.log(f"Handling prompt command '{message.command}'")
-        if message.command.startswith("connect"):
-            try:
-                _, port = message.command.split(" ")
-                self.clusters.append(
-                    await ProxyCluster.from_port(port, asynchronous=True)
+
+        command, *params = message.command.split(" ")
+        method_name = f"command_{command}"
+
+        method = getattr(self, method_name, None)
+        if method is not None:
+            if count_parameters(method) != len(params):
+                self.command_prompt.out = (
+                    f"Error: '{command}' accepts {count_parameters(method)} parameters"
                 )
-                self.log(len(self.clusters))
-            except:
-                self.command_prompt.out = "Cannot connect"
-        elif message.command in ["q", "wq", "quit", "shutdown", "exit"]:
-            await self.shutdown()
+            else:
+                self.command_prompt.out = await invoke(method, *params)
         else:
-            self.command_prompt.out = "Unknown command"
+            self.command_prompt.out = f"Unknown command '{command}'"
+
+    async def command_quit(self):
+        """Quit"""
+        await self.shutdown()
+
+    async def command_q(self):
+        await self.shutdown()
+
+    command_wq = command_q
+
+    async def command_scale(self, cluster_name, replicas):
+        """Scale cluster"""
+        try:
+            cluster = await get_cluster(cluster_name, asynchronous=True)
+        except:
+            return f"No such cluster {cluster_name}"
+        try:
+            await cluster.scale(replicas)
+        except Exception as e:
+            return str(e)
+        return f"Cluster {cluster_name} scaled to {replicas}"
+
+    async def command_close(self, cluster_name):
+        """Close cluster"""
+        try:
+            cluster = await get_cluster(cluster_name, asynchronous=True)
+        except:
+            return f"No such cluster {cluster_name}"
+        try:
+            await cluster.close()
+        except Exception as e:
+            return str(e)
+        return f"Cluster {cluster_name} closed"
 
     async def on_cluster_selected(self, event: ClusterSelected):
         self.log(f"Cluster selected {event.cluster_name}")
         await self.load_view_cluster(event.cluster_name)
+
+    # def bind_command(self, command, description=None, alternatives=None):
+    #     self.commands.append({"[command, *alternatives], description)

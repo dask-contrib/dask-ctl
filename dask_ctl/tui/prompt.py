@@ -269,6 +269,7 @@ class CommandPrompt(Widget):
             await self._emit_on_change(event)
 
         elif event.key == "enter":
+            event.stop()
             await self._emit_on_submit(self.value)
             self.value = ""
             await self.app.set_focus(None)

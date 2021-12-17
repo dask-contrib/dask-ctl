@@ -7,7 +7,6 @@ from rich.table import Table
 from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
 
-from . import __version__
 from .discovery import (
     discover_clusters,
     list_discovery_methods,

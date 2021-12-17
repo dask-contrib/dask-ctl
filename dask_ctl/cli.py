@@ -1,4 +1,3 @@
-import datetime
 from time import sleep
 import warnings
 
@@ -9,14 +8,11 @@ from rich.table import Table
 from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
-from dask.utils import format_bytes, format_time_ago, typename
-from distributed.core import Status
 from distributed.cli.utils import check_python_3
 
 from . import __version__
 from .utils import loop
 from .discovery import (
-    discover_clusters,
     discover_cluster_names,
     list_discovery_methods,
 )

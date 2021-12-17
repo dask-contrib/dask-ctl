@@ -18,7 +18,11 @@ from .discovery import (
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
 from .renderables import generate_table
-from .tui import DaskCtlTUI
+
+try:
+    from .tui import DaskCtlTUI
+except ImportError:
+    DaskCtlTUI = None
 from . import config  # noqa
 
 console = Console()
@@ -49,7 +53,11 @@ def cli():
 @click.option("--debug/--no-debug", default=False)
 def ui(debug):
     """Open the Dask Control TUI."""
-    DaskCtlTUI.run(log="textual_debug.log" if debug else None)
+    if DaskCtlTUI is None:
+        click.echo("Error: Textual is not supported on your system. Sorry!")
+        raise click.Abort()
+    else:
+        DaskCtlTUI.run(log="textual_debug.log" if debug else None)
 
 
 @cli.group()

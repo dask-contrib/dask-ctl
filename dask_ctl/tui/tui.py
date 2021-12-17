@@ -13,8 +13,8 @@ from .widgets import (
     KeyBindings,
     ClusterInfo,
     CommandReference,
+    CommandPrompt,
 )
-from .prompt import CommandPrompt
 from .events import ClusterSelected
 
 DEFAULT_BINDINGS = Bindings()
@@ -113,6 +113,9 @@ class DaskCtlTUI(App):
         self.command_prompt.clear()
         if not self.cluster_table:
             self.cluster_table = ClusterTable()
+        else:
+            # FIXME The interval seems to catch up after being paused
+            self.cluster_table.update_interval.resume()
 
         grid.place(
             info=Info(name="info"),
@@ -126,6 +129,7 @@ class DaskCtlTUI(App):
     async def load_view_cluster(self, cluster) -> None:
         self.cluster = await get_cluster(cluster, asynchronous=True)
         await self.unload_view()
+        self.cluster_table.update_interval.pause()  # FIXME This should happen when the main view is unloaded
 
         # Set bindings
         bindings = copy.deepcopy(DEFAULT_BINDINGS)

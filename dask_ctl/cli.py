@@ -19,10 +19,8 @@ from .discovery import (
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
 from .renderables import generate_table
 
-try:
-    from .tui import DaskCtlTUI
-except (ImportError, ModuleNotFoundError):
-    DaskCtlTUI = None
+from .tui import DaskCtlTUI
+
 from . import config  # noqa
 
 console = Console()

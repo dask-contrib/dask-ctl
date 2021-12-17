@@ -3,7 +3,7 @@ import yaml
 
 def load_spec(path):
     with open(path, "r") as fh:
-        spec = yaml.load(fh.read())
+        spec = yaml.safe_load(fh.read())
 
     version = spec["version"]
     if version == 1:

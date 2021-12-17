@@ -21,7 +21,7 @@ from .renderables import generate_table
 
 try:
     from .tui import DaskCtlTUI
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     DaskCtlTUI = None
 from . import config  # noqa
 

@@ -1,7 +1,7 @@
 """
 Command prompt
 
-Adapted from https://github.com/sirfuzzalot/textual-inputs/blob/a6973042454b7cf1f6134de2d935c5f9452c5b0a/src/textual_inputs/text_input.py
+Adapted from https://github.com/sirfuzzalot/textual-inputs
 """
 
 
@@ -164,7 +164,7 @@ class CommandPrompt(Widget):
             title_align="left",
             height=3,
             style=self.style or "",
-            border_style=self.border_style or Style(color="blue"),
+            border_style="orange3" if self.has_focus else "blue",
             box=rich.box.DOUBLE if self.has_focus else rich.box.SQUARE,
         )
 
@@ -312,6 +312,14 @@ class CommandPrompt(Widget):
     def set_value(self, value):
         self.value = value
         self._cursor_position = len(self.value)
+
+    def set_out(self, out):
+        self.out = out
+
+    def clear(self):
+        self.value = ""
+        self.out = ""
+        self._cursor_position = 0
 
     async def _emit_on_change(self, event: events.Key) -> None:
         event.stop()

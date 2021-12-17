@@ -46,7 +46,8 @@ def list_discovery_methods() -> Dict[str, Callable]:
                         "version": ep.dist.version,
                         "path": ep.dist.location,
                         "enabled": (
-                            ep.name not in dask.config.get("ctl.disable_discovery")
+                            not dask.config.get("ctl.disable_discovery")
+                            or ep.name not in dask.config.get("ctl.disable_discovery")
                         ),
                     }
                 }

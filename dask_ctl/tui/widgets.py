@@ -1,5 +1,7 @@
+import copy
 import sys
 
+import rich.box
 from rich.text import Text
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -54,9 +56,15 @@ class Info(Widget):
 
 
 class ClusterInfo(Widget):
-    def render(self) -> Text:
+    data: Reactive[dict] = Reactive({})
+
+    async def on_mount(self, event):
+        await self.update_data()
+        self.set_interval(5, self.update_data)
+
+    async def update_data(self):
         workers = get_workers(self.app.cluster)
-        data = {
+        self.data = {
             "name": self.app.cluster.name,
             "address": self.app.cluster.scheduler_address,
             "type": typename(type(self.app.cluster)),
@@ -66,10 +74,12 @@ class ClusterInfo(Widget):
             "created": get_created(self.app.cluster),
             "status": get_status(self.app.cluster),
         }
+
+    def render(self) -> Text:
         outs = []
-        for item in data:
+        for item in self.data:
             outs.append((f"{item}: ", "bold orange3"))
-            outs.append(f"{data[item]}\n")
+            outs.append(f"{self.data[item]}\n")
         return Text.assemble(*outs)
 
 
@@ -104,19 +114,26 @@ class CommandPrompt(Widget):
 class ClusterTable(Widget):
 
     selected = Reactive(0)
+    table: Reactive[Table] = Reactive(Table())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.table = Table()
 
     @property
     def selected_cluster(self):
         return list(self.table.columns[0].cells)[self.selected]
 
-    async def on_mount(self, event):
+    async def reload_table(self):
         self.table = await generate_table()
         self.table.expand = True
         self.table.style = "white"
+
+    async def on_mount(self, event):
+        await self.reload_table()
+        self.set_interval(5, self.reload_table)
+
+    async def on_unmount(self, event):
+        self.app.log("Table unmounted")
 
     async def on_key(self, event: events.Key) -> None:
         if event.key == "up":
@@ -126,11 +143,19 @@ class ClusterTable(Widget):
             if self.selected + 1 < len(self.table.rows):
                 self.selected += 1
         elif event.key == "enter":
-            await self.post_message(ClusterSelected(self, self.selected_cluster))
+            if self.table.row_count and self.selected < self.table.row_count:
+                await self.post_message(ClusterSelected(self, self.selected_cluster))
         self.app.refresh()
 
     def render(self) -> Panel:
-        if len(self.table.rows):
-            self.table.rows[self.selected].style = "black on blue"
+        table = copy.deepcopy(self.table)
+        if table.row_count:
+            table.rows[self.selected].style = "on bright_black"
 
-        return Panel(self.table, style="blue", title="Clusters", title_align="left")
+        return Panel(
+            table,
+            style="blue",
+            title="Clusters",
+            title_align="left",
+            box=rich.box.SQUARE,
+        )

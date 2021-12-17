@@ -1,14 +1,9 @@
-import asyncio
 import copy
 
-from textual.app import App, DockLayout, DockView
-from textual.views import WindowView
-from textual.widgets import Header, Placeholder
-from textual.binding import BindingStack, Bindings
-from textual.reactive import Reactive
+from textual.app import App, DockLayout
+from textual.widgets import Placeholder
+from textual.binding import Bindings
 from textual._callback import invoke, count_parameters
-
-from dask_ctl.proxy import ProxyCluster
 
 from ..lifecycle import get_cluster
 from .widgets import (
@@ -25,12 +20,14 @@ from .events import ClusterSelected
 DEFAULT_BINDINGS = Bindings()
 DEFAULT_BINDINGS.bind("q", "quit", "Quit")
 DEFAULT_BINDINGS.bind("r", "refresh", "Refresh")
-DEFAULT_BINDINGS.bind("ctrl+c", "quit", show=False, allow_forward=False)
+DEFAULT_BINDINGS.bind("ctrl+c", "keyboard_interrupt", show=False, allow_forward=False)
 
 
 class DaskCtlTUI(App):
     cluster = None
     commands = []
+    command_prompt = None
+    cluster_table = None
 
     async def on_load(self, event):
         pass
@@ -56,7 +53,20 @@ class DaskCtlTUI(App):
         await self.set_focus(self.command_prompt)
 
     async def action_refresh(self):
+        self.command_prompt.set_out("Refreshing...")
         self.refresh()
+        self.set_timer(0.5, self.command_prompt.clear)
+
+    async def action_keyboard_interrupt(self):
+        if self.focused == self.command_prompt:
+            await self.action_blur_all()
+        else:
+            await self.action_quit()
+
+    async def action_quit(self):
+        self.command_prompt.set_out("Exiting...")
+        self.refresh()  # Needed to show the output before shutting down
+        await self.shutdown()
 
     async def action_back(self):
         await self.load_view_main()
@@ -98,8 +108,11 @@ class DaskCtlTUI(App):
             command_prompt="left-start|right-end,bottom",
         )
 
-        self.command_prompt = CommandPrompt(name="prompt")
-        self.cluster_table = ClusterTable()
+        if not self.command_prompt:
+            self.command_prompt = CommandPrompt(name="prompt")
+        self.command_prompt.clear()
+        if not self.cluster_table:
+            self.cluster_table = ClusterTable()
 
         grid.place(
             info=Info(name="info"),
@@ -111,8 +124,8 @@ class DaskCtlTUI(App):
         )
 
     async def load_view_cluster(self, cluster) -> None:
-        await self.unload_view()
         self.cluster = await get_cluster(cluster, asynchronous=True)
+        await self.unload_view()
 
         # Set bindings
         bindings = copy.deepcopy(DEFAULT_BINDINGS)
@@ -165,18 +178,20 @@ class DaskCtlTUI(App):
             method = getattr(self, method_name, None)
             if method is not None:
                 if count_parameters(method) != len(params):
-                    self.command_prompt.out = f"Error: '{command}' accepts {count_parameters(method)} parameters"
+                    self.command_prompt.set_out(
+                        f"Error: '{command}' requires {count_parameters(method)} arguments"
+                    )
                 else:
-                    self.command_prompt.out = await invoke(method, *params)
+                    self.command_prompt.set_out(await invoke(method, *params))
             else:
-                self.command_prompt.out = f"Unknown command '{command}'"
+                self.command_prompt.set_out(f"Unknown command '{command}'")
 
     async def command_quit(self):
-        """Quit"""
-        await self.shutdown()
+        """Quit daskctl"""
+        await self.action_quit()
 
     async def command_q(self):
-        await self.shutdown()
+        await self.action_quit()
 
     command_wq = command_q
 
@@ -184,11 +199,12 @@ class DaskCtlTUI(App):
         """Scale cluster"""
         try:
             cluster = await get_cluster(cluster_name, asynchronous=True)
-        except:
+        except Exception:
             return f"No such cluster {cluster_name}"
         try:
-            await cluster.scale(replicas)
+            cluster.scale(int(replicas))
         except Exception as e:
+            self.log(e)
             return str(e)
         return f"Cluster {cluster_name} scaled to {replicas}"
 
@@ -196,14 +212,15 @@ class DaskCtlTUI(App):
         """Close cluster"""
         try:
             cluster = await get_cluster(cluster_name, asynchronous=True)
-        except:
+        except Exception:
             return f"No such cluster {cluster_name}"
         try:
-            await cluster.close()
+            cluster.close()
         except Exception as e:
             return str(e)
         return f"Cluster {cluster_name} closed"
 
     async def on_cluster_selected(self, event: ClusterSelected):
-        self.log(f"Cluster selected {event.cluster_name}")
+        self.command_prompt.set_out(f"Connecting to {event.cluster_name}...")
+        self.refresh()
         await self.load_view_cluster(event.cluster_name)

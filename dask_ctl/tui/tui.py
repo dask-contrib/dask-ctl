@@ -182,6 +182,7 @@ class DaskCtlTUI(App):
             progress="centre-start|right-end,bottom",
         )
 
+        from .widgets.progress import Progress
         grid.place(
             cluster_info=ClusterInfo(name="info"),
             help=KeyBindings(name="help"),
@@ -189,7 +190,7 @@ class DaskCtlTUI(App):
             memory=Placeholder(name="nbytes"),
             processing=Placeholder(name="processing"),
             task_steam=Placeholder(name="task stream"),
-            progress=Placeholder(name="progress"),
+            progress=Progress(name="Progress Bars"),
         )
 
     async def on_key(self, event):

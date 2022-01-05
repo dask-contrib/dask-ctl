@@ -1,8 +1,10 @@
 import copy
 
-from textual.app import App, DockLayout
+from textual import events
+from textual.app import App, DockView, ViewType
 from textual.widgets import Placeholder
 from textual.binding import Bindings
+from textual.geometry import Size
 from textual._callback import invoke, count_parameters
 
 from ..lifecycle import get_cluster
@@ -14,7 +16,6 @@ from .widgets import (
     ClusterInfo,
     CommandReference,
     CommandPrompt,
-    NBytes,
 )
 from .events import ClusterSelected
 
@@ -29,20 +30,58 @@ class DaskCtlTUI(App):
     commands = []
     command_prompt = None
     cluster_table = None
+    _binding_stack = []
 
     async def on_load(self, event):
-        pass
+        self._binding_stack.append(self.bindings)
+        self.command_prompt = CommandPrompt(name="prompt")
+        self.cluster_table = ClusterTable()
 
     async def on_mount(self) -> None:
         """Call after terminal goes in to application mode"""
         await self.load_view_main()
 
+    ################
+    ## Workarounds for pushing and popping views and bindings.
+    ## FIXME Will need to be removed/refactored with future textual releases.
+    ## ref https://github.com/Textualize/textual/discussions/182
+    ##
+
+    async def push_view(self, view) -> None:
+        """Push a new view onto the view stack and force a rerender."""
+        view.start_messages()
+        resize = events.Resize(self, Size(self.console.size))
+        await view.on_resize(resize)
+        await super().push_view(view)
+
+    async def pop_view(self) -> ViewType:
+        """Pop the top view from the stack and force a rerender."""
+        if len(self._view_stack) > 1:
+            view = self._view_stack.pop()
+            await view.close_messages()
+            await self.remove(view)
+            self.refresh()
+            return view
+
+    async def push_bindings(self, bindings=None):
+        self._binding_stack.append(self.bindings)
+        if bindings is not None:
+            self.bindings = bindings
+
+    async def pop_bindings(self):
+        bindings = self.bindings
+        self.bindings = self._binding_stack.pop()
+        return bindings
+
+    ##
+    ###########
+
     async def action_blur_all(self):
-        self.command_prompt.set_value("")
+        self.command_prompt.clear()
         await self.set_focus(None)
 
     async def action_focus_prompt(self):
-        self.command_prompt.set_value("")
+        self.command_prompt.clear()
         await self.set_focus(self.command_prompt)
 
     async def action_scale(self):
@@ -70,16 +109,10 @@ class DaskCtlTUI(App):
         await self.shutdown()
 
     async def action_back(self):
-        await self.load_view_main()
-
-    async def unload_view(self) -> None:
-        if isinstance(self.view.layout, DockLayout):
-            self.view.layout.docks.clear()
-        self.view.widgets.clear()
+        await self.pop_view()
+        await self.pop_bindings()
 
     async def load_view_main(self) -> None:
-        await self.unload_view()
-
         # Set bindings
         bindings = copy.deepcopy(DEFAULT_BINDINGS)
         bindings.bind("escape", "blur_all", show=False)
@@ -89,7 +122,7 @@ class DaskCtlTUI(App):
         self.bindings = bindings
 
         # Draw widgets
-        grid = await self.view.dock_grid(edge="top", name="header")
+        grid = await self.view.dock_grid(edge="top", name="clustertable")
 
         grid.add_column(fraction=2, name="left", min_size=20)
         grid.add_column(fraction=1, name="lcentre", min_size=20)
@@ -109,15 +142,6 @@ class DaskCtlTUI(App):
             command_prompt="left-start|right-end,bottom",
         )
 
-        if not self.command_prompt:
-            self.command_prompt = CommandPrompt(name="prompt")
-        self.command_prompt.clear()
-        if not self.cluster_table:
-            self.cluster_table = ClusterTable()
-        else:
-            # FIXME The interval seems to catch up after being paused
-            self.cluster_table.update_interval.resume()
-
         grid.place(
             info=Info(name="info"),
             key_bindings=KeyBindings(name="help"),
@@ -129,16 +153,16 @@ class DaskCtlTUI(App):
 
     async def load_view_cluster(self, cluster) -> None:
         self.cluster = await get_cluster(cluster, asynchronous=True)
-        await self.unload_view()
-        self.cluster_table.update_interval.pause()  # FIXME This should happen when the main view is unloaded
 
         # Set bindings
         bindings = copy.deepcopy(DEFAULT_BINDINGS)
         bindings.bind("escape", "back", "Back to cluster list")
-        self.bindings = bindings
+        bindings
+        await self.push_bindings(bindings)
 
         # Draw widgets
-        grid = await self.view.dock_grid(edge="top", name="header")
+        await self.push_view(DockView())
+        grid = await self.view.dock_grid(edge="top", name="cluster")
 
         grid.add_column(fraction=1, name="left", min_size=20)
         grid.add_column(fraction=2, name="centre", min_size=20)
@@ -162,18 +186,31 @@ class DaskCtlTUI(App):
             cluster_info=ClusterInfo(name="info"),
             help=KeyBindings(name="help"),
             logo=Logo(name="logo"),
-            memory=NBytes(),
+            memory=Placeholder(name="nbytes"),
             processing=Placeholder(name="processing"),
             task_steam=Placeholder(name="task stream"),
             progress=Placeholder(name="progress"),
         )
 
     async def on_key(self, event):
-        """If prompt not focussed send all keys to the table."""
-        if self.focused != self.command_prompt:
+        """If prompt not focussed forward all key events to the cluster table."""
+        if len(self._view_stack) == 1 and self.focused != self.command_prompt:
             await self.cluster_table.forward_event(event)
 
     async def handle_prompt_on_submit(self, message) -> None:
+        """Handle command prompt submit events.
+
+        Inspired by the way key bindings work we handle commands by
+        attemping to call a method on the app class named ``command_<foo>``
+        where ``foo`` is the subcommand submitted. Space separated arguments
+        after the subcommand are passed as arguments to that method.
+
+        The command ``hello world`` would result in a call of ``App.command_hello("world")``.
+
+        Setting a docstring on the ``command_hello`` method would cause it to be listed by the
+        :class:`dask_ctl.tui.widgets.CommandReference` widget.
+
+        """
         self.log(f"Handling prompt command '{message.command}'")
 
         command, *params = message.command.strip().split(" ")
@@ -228,4 +265,5 @@ class DaskCtlTUI(App):
     async def on_cluster_selected(self, event: ClusterSelected):
         self.command_prompt.set_out(f"Connecting to {event.cluster_name}...")
         self.refresh()
+        self.command_prompt.clear()
         await self.load_view_cluster(event.cluster_name)

@@ -27,9 +27,12 @@ class ClusterTable(Widget):
         return list(self.table.columns[0].cells)[self.selected]
 
     async def reload_table(self):
-        self.table = await generate_table()
-        self.table.expand = True
-        self.table.style = "white"
+        # FIXME Shouldn't need to check if parent is current view to avoid updating and rendering
+        # when table is not visible. Hopefully will be resolved in a future version of textual.
+        if self.parent.parent == self.app.view:
+            self.table = await generate_table()
+            self.table.expand = True
+            self.table.style = "white"
 
     async def on_mount(self, event):
         await self.reload_table()

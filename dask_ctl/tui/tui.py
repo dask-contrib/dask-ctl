@@ -14,6 +14,7 @@ from .widgets import (
     ClusterInfo,
     CommandReference,
     CommandPrompt,
+    NBytes,
 )
 from .events import ClusterSelected
 
@@ -161,7 +162,7 @@ class DaskCtlTUI(App):
             cluster_info=ClusterInfo(name="info"),
             help=KeyBindings(name="help"),
             logo=Logo(name="logo"),
-            memory=Placeholder(name="memory"),
+            memory=NBytes(),
             processing=Placeholder(name="processing"),
             task_steam=Placeholder(name="task stream"),
             progress=Placeholder(name="progress"),

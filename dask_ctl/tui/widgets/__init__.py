@@ -5,4 +5,5 @@ from .info import Info
 from .key_bindings import KeyBindings
 from .logo import Logo
 from .progress import Progress
-from .command_prompt import CommandPrompt
+from .prompt import CommandPrompt
+from .nbytes import NBytes

@@ -27,6 +27,7 @@ class TaskStream(Widget):
     def render(self) -> Table:
         if self.taskstream:
             graph = TaskStreamGraph(self.taskstream)
+            self.log(graph.data[0])
         else:
             graph = "Loading data"
         return Panel(

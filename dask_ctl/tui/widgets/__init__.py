@@ -7,3 +7,5 @@ from .logo import Logo
 from .progress import Progress
 from .prompt import CommandPrompt
 from .nbytes import NBytes
+from .processing import Processing
+from .taskstream import TaskStream

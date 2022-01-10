@@ -3,6 +3,7 @@ import datetime
 import click
 from rich import box
 from rich.table import Table
+from rich.text import Text
 
 from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
@@ -25,11 +26,11 @@ def get_created(cluster):
 def get_status(cluster):
     cluster_status = cluster.status.name.title()
     if cluster.status == Status.created:
-        cluster_status = f"[yellow]{cluster_status}[/yellow]"
+        cluster_status = Text(cluster_status, style="yellow")
     elif cluster.status == Status.running:
-        cluster_status = f"[green]{cluster_status}[/green]"
+        cluster_status = Text(cluster_status, style="green")
     else:
-        cluster_status = f"[red]{cluster_status}[/red]"
+        cluster_status = Text(cluster_status, style="red")
     return cluster_status
 
 

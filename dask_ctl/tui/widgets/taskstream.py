@@ -40,7 +40,9 @@ class TaskStream(Widget):
 
 
 class Demo(App):
-    cluster = get_cluster("proxycluster-8786")
+    def __init__(self, *args, **kwargs):
+        self.cluster = get_cluster("proxycluster-8786")
+        super().__init__(*args, **kwargs)
 
     async def on_load(self, event: events.Load) -> None:
         await self.bind("q", "quit", "Quit")

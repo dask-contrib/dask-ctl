@@ -46,12 +46,15 @@ class TaskStream:
     def __init__(self, data, tick="\u2588"):
         self.data = []
         self.task_prefixes = []
+        self.threads = []
         self.tick = tick
         self.options = None
         for task in data:
             for startstop in task["startstops"]:
                 startstop["key"] = task["key"]
                 startstop["thread"] = task["thread"]
+                if task["thread"] not in self.threads:
+                    self.threads.append(task["thread"])
                 startstop["prefix"] = startstop["key"].split("-")[0]
                 if startstop["prefix"] not in self.task_prefixes:
                     self.task_prefixes.append(startstop["prefix"])
@@ -79,21 +82,21 @@ class TaskStream:
     ) -> Iterable["Segment"]:
         start = min([t["start"] for t in self.data])
         stop = max([t["stop"] for t in self.data])
-        workers = list(set([t["worker"] for t in self.data]))
+        workers = list(set([t["thread"] for t in self.data]))
         interval_width = (stop - start) / max_width
 
-        worker_height = max_height // len(workers)
-        display = np.zeros((max_height, max_width))
+        worker_height = max_height // len(workers) or 1
+        display = np.zeros((max(max_height, len(workers)), max_width))
 
         for task in self.data:
-            worker = workers.index(task["worker"])
+            thread = self.threads.index(task["thread"])
             for i in range(worker_height):
                 i_start = floor((task["start"] - start) / interval_width)
                 if task["stop"] - task["start"] < interval_width:
                     i_stop = i_start + 1
                 else:
                     i_stop = ceil((task["stop"] - start) / interval_width)
-                row = worker * worker_height + i
+                row = thread * worker_height + i
 
                 if task["action"] == "compute":
                     value = color_to_int(

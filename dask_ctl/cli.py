@@ -10,9 +10,12 @@ from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
 from dask.utils import format_bytes, format_time_ago
+from dask.distributed import Client
 from distributed.core import Status
 from distributed.cli.utils import check_python_3
 from distributed.utils import typename
+
+import pandas as pd
 
 from . import __version__
 from .utils import loop
@@ -22,6 +25,7 @@ from .discovery import (
     list_discovery_methods,
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
+
 from . import config  # noqa
 
 console = Console()
@@ -145,6 +149,80 @@ def list(discovery=None):
                             )
                         else:
                             console.print_exception(show_locals=True)
+                            raise click.Abort()
+
+        console.print(table)
+
+    loop.run_sync(_list)
+
+
+@cluster.command()
+@click.argument("discovery", type=str, required=False)
+def metrics(discovery=None):
+    """List Dask cluster worker metrics."""
+
+    async def _list():
+        table = Table(box=box.SIMPLE)
+        table_columns = [
+            "id",
+            "type",
+            "host",
+            "nthreads",
+            "memory_limit",
+            "last_seen",
+            "metrics.cpu",
+            "metrics.memory",
+            "metrics.in_memory",
+            "metrics.executing",
+            "metrics.ready",
+            "metrics.in_flight",
+            "metrics.bandwidth.total",
+            "metrics.spilled_nbytes",
+            "metrics.time",
+            "metrics.read_bytes",
+            "metrics.write_bytes",
+            "metrics.read_bytes_disk",
+            "metrics.write_bytes_disk",
+            "metrics.num_fds",
+        ]
+
+        for col in table_columns:
+            table.add_column(col.replace("_", " ").replace("metrics.", "").title())
+
+        with console.status("[bold green]Fetching cluster metrics...") as status:
+            discovery_methods = list_discovery_methods()
+            for discovery_method in discovery_methods:
+                status.update(f"[bold green]Discovering {discovery_method}s...")
+                if discovery_methods[discovery_method]["enabled"] and (
+                    discovery is None or discovery == discovery_method
+                ):
+                    try:
+                        async for cluster in discover_clusters(
+                            discovery=discovery_method
+                        ):
+                            try:
+                                client = Client(cluster.scheduler_address)
+                                workers = (
+                                    client.scheduler_info().get("workers").values()
+                                )
+                            except KeyError:
+                                workers = []
+
+                            df = pd.json_normalize(workers)
+                            df = df[table_columns]
+                            df = df.astype(str)
+                            for row in df.to_dict(orient="records"):
+                                table.add_row(*row.values())
+
+                    except Exception:
+                        console.print_exception(show_locals=True)
+                        if discovery is None:
+                            console.print(
+                                f":warning: Discovery {discovery_method} failed. "
+                                f"Run `daskctl cluster list {discovery_method}` for more info.",
+                                style="yellow",
+                            )
+                        else:
                             raise click.Abort()
 
         console.print(table)

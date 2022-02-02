@@ -15,6 +15,7 @@ setuptools.setup(
     description="A set of tools to provide a control plane for managing the lifecycle of Dask clusters.",
     long_description=long_description,
     long_description_content_type="text/x-rst",
+    include_package_data=True,
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

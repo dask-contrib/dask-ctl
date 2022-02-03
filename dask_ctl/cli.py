@@ -60,16 +60,13 @@ def cluster():
 def create(spec_file_path):
     """Create a Dask cluster from a spec file."""
 
-    async def _create():
-        try:
-            cluster = await create_cluster(spec_file_path)
-        except Exception:
-            click.echo("Failed to create cluster.")
-            raise click.Abort()
-        else:
-            click.echo(f"Created cluster {cluster.name}.")
-
-    loop.run_sync(_create)
+    try:
+        cluster = create_cluster(spec_file_path)
+    except Exception:
+        click.echo("Failed to create cluster.")
+        raise click.Abort()
+    else:
+        click.echo(f"Created cluster {cluster.name}.")
 
 
 @cluster.command()

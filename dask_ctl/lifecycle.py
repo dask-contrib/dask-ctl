@@ -9,7 +9,7 @@ from .spec import load_spec
 from .utils import loop
 
 
-async def create_cluster(spec_path: str) -> Cluster:
+def create_cluster(spec_path: str) -> Cluster:
     """Create a cluster from a spec file.
 
     Parameters
@@ -37,15 +37,19 @@ async def create_cluster(spec_path: str) -> Cluster:
     LocalCluster(b3973c71, 'tcp://127.0.0.1:8786', workers=4, threads=12, memory=17.18 GB)
 
     """
-    cm_module, cm_class, args, kwargs = load_spec(spec_path)
-    module = importlib.import_module(cm_module)
-    cluster_manager = getattr(module, cm_class)
 
-    kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
+    async def _create_cluster():
+        cm_module, cm_class, args, kwargs = load_spec(spec_path)
+        module = importlib.import_module(cm_module)
+        cluster_manager = getattr(module, cm_class)
 
-    cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
-    cluster.shutdown_on_close = False
-    return cluster
+        kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
+
+        cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
+        cluster.shutdown_on_close = False
+        return cluster
+
+    return loop.run_sync(_create_cluster)
 
 
 def list_clusters() -> List[Cluster]:

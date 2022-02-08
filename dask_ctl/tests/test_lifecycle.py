@@ -13,7 +13,7 @@ def test_create_cluster(simple_spec_path):
     assert isinstance(cluster, LocalCluster)
 
 
-@pytest.xfail(
+@pytest.mark.xfail(
     "GitHib Actions seems to intermittently have port 8786 in use causing this test to fail."
 )
 def test_snippet():

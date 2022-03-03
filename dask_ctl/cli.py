@@ -12,7 +12,7 @@ from rich.progress import Progress, BarColumn
 from dask.utils import format_bytes, format_time_ago
 from distributed.core import Status
 from distributed.cli.utils import check_python_3
-from distributed.utils import typename
+from dask.utils import typename
 
 from . import __version__
 from .utils import loop

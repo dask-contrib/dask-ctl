@@ -153,7 +153,7 @@ def list(discovery=None):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 @click.argument("n-workers", type=int)
 def scale(name, n_workers):
     """Scale a Dask cluster.
@@ -219,7 +219,7 @@ def scale(name, n_workers):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def delete(
     name,
 ):
@@ -239,7 +239,7 @@ def delete(
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def snippet(
     name,
 ):

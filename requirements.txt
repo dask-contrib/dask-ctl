@@ -1,4 +1,4 @@
-click>=8
+click>=8.1
 dask>=2021.08.1
 distributed
 rich

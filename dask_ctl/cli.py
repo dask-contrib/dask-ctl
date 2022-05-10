@@ -9,10 +9,8 @@ from rich.table import Table
 from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
-from dask.utils import format_bytes, format_time_ago
+from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
-from distributed.cli.utils import check_python_3
-from distributed.utils import typename
 
 from . import __version__
 from .utils import loop
@@ -150,7 +148,7 @@ def list(discovery=None):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 @click.argument("n-workers", type=int)
 def scale(name, n_workers):
     """Scale a Dask cluster.
@@ -216,7 +214,7 @@ def scale(name, n_workers):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def delete(
     name,
 ):
@@ -236,7 +234,7 @@ def delete(
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def snippet(
     name,
 ):
@@ -324,7 +322,6 @@ def version():
 
 
 def daskctl():
-    check_python_3()
     cli()
 
 

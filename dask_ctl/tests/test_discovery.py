@@ -2,13 +2,12 @@ import pytest
 
 from typing import AsyncIterator
 
-from distributed import LocalCluster
+from dask.distributed import LocalCluster
 from dask_ctl.discovery import (
     discover_cluster_names,
     discover_clusters,
     list_discovery_methods,
 )
-from dask_ctl.proxy import ProxyCluster
 
 
 def test_discovery_methods():
@@ -50,6 +49,5 @@ async def test_discovery_list():
 @pytest.mark.asyncio
 async def test_discover_clusters():
     with LocalCluster() as cluster:
-        async for discovered_cluster in discover_clusters():
-            if isinstance(discovered_cluster, ProxyCluster):
-                assert cluster == discovered_cluster
+        discovered_names = [c.name async for c in discover_clusters()]
+        assert cluster.name in discovered_names

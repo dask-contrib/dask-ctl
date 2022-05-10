@@ -9,9 +9,8 @@ from rich.table import Table
 from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
-from dask.utils import format_bytes, format_time_ago
+from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
-from distributed.utils import typename
 
 from . import __version__
 from .utils import loop

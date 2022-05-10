@@ -1,5 +1,3 @@
-import pytest
-
 import ast
 
 from dask.distributed import LocalCluster
@@ -13,9 +11,6 @@ def test_create_cluster(simple_spec_path):
     assert isinstance(cluster, LocalCluster)
 
 
-@pytest.mark.xfail(
-    reason="GitHib Actions seems to intermittently have port 8786 in use causing this test to fail."
-)
 def test_snippet():
     with LocalCluster(scheduler_port=8786) as _:
         snippet = get_snippet("proxycluster-8786")

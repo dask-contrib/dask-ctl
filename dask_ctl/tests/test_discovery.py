@@ -52,4 +52,4 @@ async def test_discover_clusters():
     with LocalCluster() as cluster:
         async for discovered_cluster in discover_clusters():
             if isinstance(discovered_cluster, ProxyCluster):
-                assert cluster.scheduler_info == discovered_cluster.scheduler_info
+                assert cluster == discovered_cluster

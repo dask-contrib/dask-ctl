@@ -1,11 +1,13 @@
 import asyncio
 
-from tornado.ioloop import IOLoop
-from distributed.cli.utils import install_signal_handlers
 
-
-loop = IOLoop.current()
-install_signal_handlers(loop)
+def run_sync(f, *args, **kwargs):
+    loop = asyncio.get_event_loop()
+    try:
+        return loop.run_until_complete(f(*args, **kwargs))
+    except RuntimeError:
+        f = asyncio.run_coroutine_threadsafe(f(*args, **kwargs), loop)
+        return f.result()
 
 
 class _AsyncTimedIterator:

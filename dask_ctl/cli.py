@@ -13,7 +13,7 @@ from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
 
 from . import __version__
-from .utils import loop
+from .utils import run_sync
 from .discovery import (
     discover_clusters,
     discover_cluster_names,
@@ -38,7 +38,7 @@ def autocomplete_cluster_names(ctx, args, incomplete):
             if incomplete in cluster
         ]
 
-    return loop.run_sync(_autocomplete_cluster_names)
+    return run_sync(_autocomplete_cluster_names)
 
 
 @click.group()
@@ -144,7 +144,7 @@ def list(discovery=None):
 
         console.print(table)
 
-    loop.run_sync(_list)
+    run_sync(_list)
 
 
 @cluster.command()
@@ -292,7 +292,7 @@ def list_discovery():
             )
         console.print(table)
 
-    loop.run_sync(_list_discovery)
+    run_sync(_list_discovery)
 
 
 @discovery.command(name="enable")

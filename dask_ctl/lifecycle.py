@@ -6,7 +6,7 @@ from dask.utils import typename
 from distributed.deploy.cluster import Cluster
 from .discovery import discover_cluster_names, discover_clusters
 from .spec import load_spec
-from .utils import loop
+from .utils import run_sync
 
 
 def create_cluster(spec_path: str) -> Cluster:
@@ -38,7 +38,7 @@ def create_cluster(spec_path: str) -> Cluster:
 
     """
 
-    return loop.run_sync(_create_cluster, spec_path)
+    return run_sync(_create_cluster, spec_path)
 
 
 async def _create_cluster(spec_path: str) -> Cluster:
@@ -75,7 +75,7 @@ def list_clusters() -> List[Cluster]:
 
     """
 
-    return loop.run_sync(_list_clusters)
+    return run_sync(_list_clusters)
 
 
 async def _list_clusters() -> List[Cluster]:
@@ -110,7 +110,7 @@ def get_cluster(name: str) -> Cluster:
 
     """
 
-    return loop.run_sync(_get_cluster, name)
+    return run_sync(_get_cluster, name)
 
 
 async def _get_cluster(name: str) -> Cluster:
@@ -148,7 +148,7 @@ def get_snippet(name: str) -> str:
     client = Client(cluster)
 
     """
-    return loop.run_sync(_get_snippet, name)
+    return run_sync(_get_snippet, name)
 
 
 async def _get_snippet(name: str) -> str:
@@ -184,7 +184,7 @@ def scale_cluster(name: str, n_workers: int) -> None:
     >>> scale_cluster("mycluster", 10)  # doctest: +SKIP
 
     """
-    return loop.run_sync(_scale_cluster, name, n_workers)
+    return run_sync(_scale_cluster, name, n_workers)
 
 
 async def _scale_cluster(name: str, n_workers: int) -> None:
@@ -211,7 +211,7 @@ def delete_cluster(name: str) -> None:
     >>> delete_cluster("mycluster")  # doctest: +SKIP
 
     """
-    return loop.run_sync(_delete_cluster, name)
+    return run_sync(_delete_cluster, name)
 
 
 async def _delete_cluster(name: str) -> None:

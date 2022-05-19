@@ -1,13 +1,22 @@
 import asyncio
+import concurrent.futures
 
 
 def run_sync(f, *args, **kwargs):
-    loop = asyncio.get_event_loop()
+    async def canary():
+        """An empty coroutine to check if we are inside an event loop"""
+        pass
+
     try:
-        return loop.run_until_complete(f(*args, **kwargs))
+        asyncio.run(canary())
     except RuntimeError:
-        f = asyncio.run_coroutine_threadsafe(f(*args, **kwargs), loop)
-        return f.result()
+        # event loop is already running and not running with jupyter (eg nest-asyncio)
+        pass
+    else:
+        return asyncio.run(f(*args, **kwargs))
+
+    with concurrent.futures.ThreadPoolExecutor(1) as tpe:
+        return tpe.submit(asyncio.run, f(*args, **kwargs)).result()
 
 
 class _AsyncTimedIterator:

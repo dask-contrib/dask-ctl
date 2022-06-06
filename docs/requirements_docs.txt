@@ -1,4 +1,4 @@
 sphinx
 sphinx-autobuild
 sphinx-click
-dask-sphinx-theme
+dask-sphinx-theme>=3.0.0

@@ -1,11 +1,22 @@
 import asyncio
-
-from tornado.ioloop import IOLoop
-from distributed.cli.utils import install_signal_handlers
+import concurrent.futures
 
 
-loop = IOLoop.current()
-install_signal_handlers(loop)
+def run_sync(f, *args, **kwargs):
+    async def canary():
+        """An empty coroutine to check if we are inside an event loop"""
+        pass
+
+    try:
+        asyncio.run(canary())
+    except RuntimeError:
+        # event loop is already running and not running with jupyter (eg nest-asyncio)
+        pass
+    else:
+        return asyncio.run(f(*args, **kwargs))
+
+    with concurrent.futures.ThreadPoolExecutor(1) as tpe:
+        return tpe.submit(asyncio.run, f(*args, **kwargs)).result()
 
 
 class _AsyncTimedIterator:

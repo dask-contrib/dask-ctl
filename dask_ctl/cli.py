@@ -13,7 +13,7 @@ from dask.utils import format_bytes, format_time_ago, typename
 from distributed.core import Status
 
 from . import __version__
-from .utils import loop
+from .utils import run_sync
 from .discovery import (
     discover_clusters,
     discover_cluster_names,
@@ -38,7 +38,7 @@ def autocomplete_cluster_names(ctx, args, incomplete):
             if incomplete in cluster
         ]
 
-    return loop.run_sync(_autocomplete_cluster_names)
+    return run_sync(_autocomplete_cluster_names)
 
 
 @click.group()
@@ -144,7 +144,7 @@ def list(discovery=None):
 
         console.print(table)
 
-    loop.run_sync(_list)
+    run_sync(_list)
 
 
 @cluster.command()
@@ -273,26 +273,22 @@ def list_discovery():
     methods registered on your system.
 
     """
+    table = Table(box=box.SIMPLE)
+    table.add_column("Name", style="cyan", no_wrap=True)
+    table.add_column("Package", justify="right", style="magenta")
+    table.add_column("Version", style="green")
+    table.add_column("Path", style="yellow")
+    table.add_column("Enabled", justify="right", style="green")
 
-    async def _list_discovery():
-        table = Table(box=box.SIMPLE)
-        table.add_column("Name", style="cyan", no_wrap=True)
-        table.add_column("Package", justify="right", style="magenta")
-        table.add_column("Version", style="green")
-        table.add_column("Path", style="yellow")
-        table.add_column("Enabled", justify="right", style="green")
-
-        for method_name, method in list_discovery_methods().items():
-            table.add_row(
-                method_name,
-                method["package"],
-                method["version"],
-                method["path"],
-                ":heavy_check_mark:" if method["enabled"] else ":cross_mark:",
-            )
-        console.print(table)
-
-    loop.run_sync(_list_discovery)
+    for method_name, method in list_discovery_methods().items():
+        table.add_row(
+            method_name,
+            method["package"],
+            method["version"],
+            method["path"],
+            ":heavy_check_mark:" if method["enabled"] else ":cross_mark:",
+        )
+    console.print(table)
 
 
 @discovery.command(name="enable")

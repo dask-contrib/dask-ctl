@@ -6,7 +6,7 @@ from dask.utils import typename
 from distributed.deploy.cluster import Cluster
 from .discovery import discover_cluster_names, discover_clusters
 from .spec import load_spec
-from .utils import loop
+from .utils import run_sync
 
 
 def create_cluster(spec_path: str) -> Cluster:
@@ -38,18 +38,22 @@ def create_cluster(spec_path: str) -> Cluster:
 
     """
 
-    async def _create_cluster():
-        cm_module, cm_class, args, kwargs = load_spec(spec_path)
-        module = importlib.import_module(cm_module)
-        cluster_manager = getattr(module, cm_class)
+    return run_sync(_create_cluster, spec_path)
 
-        kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
 
-        cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
-        cluster.shutdown_on_close = False
-        return cluster
+async def _create_cluster(spec_path: str) -> Cluster:
+    cm_module, cm_class, args, kwargs = load_spec(spec_path)
+    module = importlib.import_module(cm_module)
+    cluster_manager = getattr(module, cm_class)
 
-    return loop.run_sync(_create_cluster)
+    kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
+
+    cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
+    cluster.shutdown_on_close = False
+    return cluster
+
+
+_create_cluster.__doc__ = create_cluster.__doc__
 
 
 def list_clusters() -> List[Cluster]:
@@ -71,13 +75,17 @@ def list_clusters() -> List[Cluster]:
 
     """
 
-    async def _list_clusters():
-        clusters = []
-        async for cluster in discover_clusters():
-            clusters.append(cluster)
-        return clusters
+    return run_sync(_list_clusters)
 
-    return loop.run_sync(_list_clusters)
+
+async def _list_clusters() -> List[Cluster]:
+    clusters = []
+    async for cluster in discover_clusters():
+        clusters.append(cluster)
+    return clusters
+
+
+_list_clusters.__doc__ = list_clusters.__doc__
 
 
 def get_cluster(name: str) -> Cluster:
@@ -102,13 +110,17 @@ def get_cluster(name: str) -> Cluster:
 
     """
 
-    async def _get_cluster():
-        async for cluster_name, cluster_class in discover_cluster_names():
-            if cluster_name == name:
-                return cluster_class.from_name(name)
-        raise RuntimeError("No such cluster %s", name)
+    return run_sync(_get_cluster, name)
 
-    return loop.run_sync(_get_cluster)
+
+async def _get_cluster(name: str) -> Cluster:
+    async for cluster_name, cluster_class in discover_cluster_names():
+        if cluster_name == name:
+            return cluster_class.from_name(name)
+    raise RuntimeError("No such cluster %s", name)
+
+
+_get_cluster.__doc__ = get_cluster.__doc__
 
 
 def get_snippet(name: str) -> str:
@@ -136,8 +148,11 @@ def get_snippet(name: str) -> str:
     client = Client(cluster)
 
     """
+    return run_sync(_get_snippet, name)
 
-    cluster = get_cluster(name)
+
+async def _get_snippet(name: str) -> str:
+    cluster = await _get_cluster(name)
     try:
         return cluster.get_snippet()
     except AttributeError:
@@ -146,6 +161,9 @@ def get_snippet(name: str) -> str:
         return get_template("snippet.py.j2").render(
             module=module, cm=cm, name=name, cluster=cluster
         )
+
+
+_get_snippet.__doc__ = get_snippet.__doc__
 
 
 def scale_cluster(name: str, n_workers: int) -> None:
@@ -166,8 +184,15 @@ def scale_cluster(name: str, n_workers: int) -> None:
     >>> scale_cluster("mycluster", 10)  # doctest: +SKIP
 
     """
+    return run_sync(_scale_cluster, name, n_workers)
 
-    return get_cluster(name).scale(n_workers)
+
+async def _scale_cluster(name: str, n_workers: int) -> None:
+    cluster = await _get_cluster(name)
+    return await cluster.scale(n_workers)
+
+
+_scale_cluster.__doc__ = scale_cluster.__doc__
 
 
 def delete_cluster(name: str) -> None:
@@ -186,5 +211,12 @@ def delete_cluster(name: str) -> None:
     >>> delete_cluster("mycluster")  # doctest: +SKIP
 
     """
+    return run_sync(_delete_cluster, name)
 
-    return get_cluster(name).close()
+
+async def _delete_cluster(name: str) -> None:
+    cluster = await _get_cluster(name)
+    return await cluster.close()
+
+
+_delete_cluster.__doc__ = _delete_cluster.__doc__

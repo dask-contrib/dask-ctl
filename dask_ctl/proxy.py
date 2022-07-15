@@ -103,6 +103,12 @@ class ProxyCluster(Cluster):
     def close(self, *args, **kwargs):
         raise TypeError("Closing of ProxyCluster objects is not supported.")
 
+    def __await__(self):
+        async def _():
+            return self
+
+        return _().__await__()
+
 
 async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     """Discover proxy clusters.

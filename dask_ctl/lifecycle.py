@@ -80,13 +80,15 @@ def list_clusters() -> List[Cluster]:
     return loop.run_sync(_list_clusters)
 
 
-def get_cluster(name: str) -> Cluster:
+def get_cluster(name: str, asynchronous=False) -> Cluster:
     """Get a cluster by name.
 
     Parameters
     ----------
     name
         Name of cluster to get a cluster manager for.
+    asynchronous
+        Return an awaitable instead of starting a loop.
 
     Returns
     -------
@@ -108,7 +110,10 @@ def get_cluster(name: str) -> Cluster:
                 return cluster_class.from_name(name)
         raise RuntimeError("No such cluster %s", name)
 
-    return loop.run_sync(_get_cluster)
+    if asynchronous:
+        return _get_cluster()
+    else:
+        return loop.run_sync(_get_cluster)
 
 
 def get_snippet(name: str) -> str:

@@ -5,6 +5,7 @@ from textual.app import App, DockView, ViewType
 from textual.binding import Bindings
 from textual.geometry import Size
 from textual._callback import invoke, count_parameters
+from textual.widgets import Placeholder
 
 from ..lifecycle import get_cluster
 from .widgets import (
@@ -15,9 +16,6 @@ from .widgets import (
     ClusterInfo,
     CommandReference,
     CommandPrompt,
-    NBytes,
-    Processing,
-    TaskStream,
 )
 from .events import ClusterSelected
 
@@ -184,16 +182,14 @@ class DaskCtlTUI(App):
             progress="centre-start|right-end,bottom",
         )
 
-        from .widgets.progress import Progress
-
         grid.place(
             cluster_info=ClusterInfo(name="info"),
             help=KeyBindings(name="help"),
             logo=Logo(name="logo"),
-            memory=NBytes(name="nbytes"),
-            processing=Processing(name="processing"),
-            task_steam=TaskStream(name="task stream"),
-            progress=Progress(name="Progress Bars"),
+            memory=Placeholder(name="nbytes"),
+            processing=Placeholder(name="processing"),
+            task_steam=Placeholder(name="task stream"),
+            progress=Placeholder(name="Progress Bars"),
         )
 
     async def on_key(self, event):

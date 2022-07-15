@@ -21,7 +21,7 @@ class Processing(Widget):
 
     async def get_processing(self):
         self.processing = await self.app.cluster.scheduler_comm.get_worker_processing()
-        if sum(self.processing) == 0:
+        if self.processing is None or sum(self.processing) == 0:
             self.max = 0
         else:
             self.max = max(self.max, *self.processing)

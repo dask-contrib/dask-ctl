@@ -8,8 +8,6 @@ from rich.table import Table
 from rich.syntax import Syntax
 from rich.progress import Progress, BarColumn
 
-from distributed.cli.utils import check_python_3
-
 from . import __version__
 from .utils import loop
 from .discovery import (
@@ -69,16 +67,13 @@ def cluster():
 def create(spec_file_path):
     """Create a Dask cluster from a spec file."""
 
-    async def _create():
-        try:
-            cluster = await create_cluster(spec_file_path)
-        except Exception:
-            click.echo("Failed to create cluster.")
-            raise click.Abort()
-        else:
-            click.echo(f"Created cluster {cluster.name}.")
-
-    loop.run_sync(_create)
+    try:
+        cluster = create_cluster(spec_file_path)
+    except Exception:
+        click.echo("Failed to create cluster.")
+        raise click.Abort()
+    else:
+        click.echo(f"Created cluster {cluster.name}.")
 
 
 @cluster.command()
@@ -103,7 +98,7 @@ def list(discovery=None):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 @click.argument("n-workers", type=int)
 def scale(name, n_workers):
     """Scale a Dask cluster.
@@ -169,7 +164,7 @@ def scale(name, n_workers):
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def delete(
     name,
 ):
@@ -189,7 +184,7 @@ def delete(
 
 
 @cluster.command()
-@click.argument("name", autocompletion=autocomplete_cluster_names)
+@click.argument("name", shell_complete=autocomplete_cluster_names)
 def snippet(
     name,
 ):
@@ -277,7 +272,6 @@ def version():
 
 
 def daskctl():
-    check_python_3()
     cli()
 
 

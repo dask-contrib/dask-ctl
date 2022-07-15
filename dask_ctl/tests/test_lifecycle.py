@@ -1,5 +1,3 @@
-import pytest
-
 import ast
 
 from dask.distributed import LocalCluster
@@ -7,9 +5,8 @@ from dask.distributed import LocalCluster
 from dask_ctl.lifecycle import create_cluster, get_snippet
 
 
-@pytest.mark.asyncio
-async def test_create_cluster(simple_spec_path):
-    cluster = await create_cluster(simple_spec_path)
+def test_create_cluster(simple_spec_path):
+    cluster = create_cluster(simple_spec_path)
 
     assert isinstance(cluster, LocalCluster)
 

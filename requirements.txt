@@ -1,6 +1,7 @@
 click>=8.1.2
 dask>=2021.08.1
 distributed
+numpy
 rich
 textual>=0.1.12
 tornado

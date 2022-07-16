@@ -18,5 +18,4 @@ def test_snippet():
         # Check is valid Python
         ast.parse(snippet)
 
-        assert "ProxyCluster" in snippet
         assert "proxycluster-8786" in snippet

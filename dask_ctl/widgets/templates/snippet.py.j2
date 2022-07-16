@@ -1,5 +1,5 @@
 from dask.distributed import Client
-from {{ module }} import {{ cm }}
+from dask_ctl import get_cluster
 
-cluster = {{ cm }}.from_name("{{ name }}")
+cluster = get_cluster("{{ name }}")
 client = Client(cluster)

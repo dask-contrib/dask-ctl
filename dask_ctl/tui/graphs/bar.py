@@ -92,7 +92,7 @@ class HBar:
             value_text = f" {self.formatter(value)}"
             try:
                 bar_width = floor(
-                    ((max_width / self.x_width or max(self.data.values())) * value)
+                    ((max_width / (self.x_width or max(self.data.values()))) * value)
                 )
             except ZeroDivisionError:
                 bar_width = 0

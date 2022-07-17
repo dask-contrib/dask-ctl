@@ -5,6 +5,9 @@ dask-ctl
 .. image:: https://img.shields.io/pypi/v/dask-ctl
    :target: https://pypi.org/project/dask-ctl/
    :alt: PyPI
+.. image:: https://img.shields.io/readthedocs/dask-ctl
+   :target: https://dask-ctl.readthedocs.io/
+   :alt: Read the Docs
 .. image:: https://github.com/dask-contrib/dask-ctl/workflows/Tests/badge.svg
    :target: https://github.com/dask-contrib/dask-ctl/actions?query=workflow%3ATests
    :alt: GitHub Actions - CI

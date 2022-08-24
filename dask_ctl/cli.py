@@ -1,4 +1,5 @@
 from time import sleep
+import sys
 import warnings
 
 import click
@@ -40,25 +41,29 @@ def autocomplete_cluster_names(ctx, args, incomplete):
     return loop.run_sync(_autocomplete_cluster_names)
 
 
-@click.group()
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+        allow_extra_args=True,
+    )
+)
 def cli():
-    """daskctl controls Dask clusters."""
+    """[deprecated] use `dask cluster` instead of `daskctl`."""
+
+    click.echo(
+        "The command `daskctl` has been deprecated, please use `dask cluster` instead."
+    )
+    sys.exit(1)
 
 
-@cli.command()
-@click.option("--debug/--no-debug", default=False)
-def ui(debug):
-    """Open the Dask Control TUI."""
-    if DaskCtlTUI is None:
-        click.echo("Error: Textual is not supported on your system. Sorry!")
-        raise click.Abort()
-    else:
-        DaskCtlTUI.run(log="textual_debug.log" if debug else None)
-
-
-@cli.group()
+@click.group()
 def cluster():
-    """Cluster commands."""
+    """Manage dask clusters.
+
+    Create, List, Scale and Delete your dask clusters with dask-ctl.
+
+    See https://dask-ctl.readthedocs.io/en/latest/cli.html for more info.
+    """
     pass
 
 
@@ -82,7 +87,7 @@ def list(discovery=None):
     """List Dask clusters.
 
     DISCOVERY can be optionally set to restrict which discovery method to use.
-    Run `daskctl list-discovery` for all available options.
+    Run `dask cluster discovery list` for all available options.
     """
 
     async def _list():
@@ -104,7 +109,7 @@ def scale(name, n_workers):
     """Scale a Dask cluster.
 
     NAME is the name of the cluster to scale.
-    Run `daskctl list` for all available options.
+    Run `dask cluster list` for all available options.
 
     N_WORKERS is the number of workers to scale to.
 
@@ -171,7 +176,7 @@ def delete(
     """Delete a Dask cluster.
 
     NAME is the name of the cluster to delete.
-    Run `daskctl list` for all available options.
+    Run `dask cluster list` for all available options.
 
     """
     try:
@@ -191,7 +196,7 @@ def snippet(
     """Get code snippet for connecting to a cluster.
 
     NAME is the name of the cluster to get a snippet for.
-    Run `daskctl list` for all available options.
+    Run `dask cluster list` for all available options.
 
     """
     try:
@@ -208,9 +213,9 @@ def snippet(
         console.print(snip)
 
 
-@cli.group()
+@cluster.group()
 def discovery():
-    """Discovery commands."""
+    """Cluster discovery subcommands."""
     pass
 
 
@@ -265,10 +270,21 @@ def disable_discovery(name):
     )
 
 
-@cli.command()
+@cluster.command()
 def version():
-    """Show the daskctl version."""
-    click.echo(__version__)
+    """Show the dask-ctl version."""
+    click.echo(f"dask-ctl: {__version__}")
+
+
+@cluster.command()
+@click.option("--debug/--no-debug", default=False)
+def ui(debug):
+    """Open the Dask Control Text UI."""
+    if DaskCtlTUI is None:
+        click.echo("Error: Textual is not supported on your system. Sorry!")
+        raise click.Abort()
+    else:
+        DaskCtlTUI.run(log="textual_debug.log" if debug else None)
 
 
 def daskctl():

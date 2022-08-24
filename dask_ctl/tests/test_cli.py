@@ -4,12 +4,12 @@ from dask_ctl.cli import autocomplete_cluster_names
 
 
 def test_list_discovery():
-    assert b"proxycluster" in check_output(["daskctl", "discovery", "list"])
+    assert b"proxycluster" in check_output(["dask", "cluster", "discovery", "list"])
 
 
 def test_list():
     with LocalCluster(name="testcluster", scheduler_port=8786) as _:
-        output = check_output(["daskctl", "cluster", "list"])
+        output = check_output(["dask", "cluster", "list"])
 
         assert b"Name" in output
 
@@ -22,7 +22,7 @@ def test_list():
 
 
 def test_create(simple_spec_path):
-    output = check_output(["daskctl", "cluster", "create", "-f", simple_spec_path])
+    output = check_output(["dask", "cluster", "create", "-f", simple_spec_path])
     assert b"Created" in output
 
 

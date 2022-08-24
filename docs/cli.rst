@@ -1,6 +1,6 @@
 Command line utility
 ====================
 
-.. click:: dask_ctl.cli:cli
-   :prog: daskctl
+.. click:: dask_ctl.cli:cluster
+   :prog: dask cluster
    :nested: full

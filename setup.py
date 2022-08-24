@@ -29,5 +29,7 @@ setuptools.setup(
         daskctl=dask_ctl.cli:daskctl
         [dask_cluster_discovery]
         proxycluster=dask_ctl.proxy:discover
+        [dask_cli]
+        cluster=dask_ctl.cli:cluster
       """,
 )

@@ -229,7 +229,7 @@ class DaskCtlTUI(App):
                 self.command_prompt.set_out(f"Unknown command '{command}'")
 
     async def command_quit(self):
-        """Quit daskctl"""
+        """Quit dask-ctl"""
         await self.action_quit()
 
     async def command_q(self):

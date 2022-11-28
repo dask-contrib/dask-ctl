@@ -1,6 +1,6 @@
 from rich.text import Text
 
-from textual.reactive import Reactive
+from textual.reactive import reactive
 from textual.widget import Widget
 
 from dask.utils import format_bytes, typename
@@ -9,7 +9,7 @@ from ...renderables import get_created, get_status, get_workers
 
 
 class ClusterInfo(Widget):
-    data: Reactive[dict] = Reactive({})
+    data = reactive({})
 
     async def on_mount(self, event):
         await self.update_data()

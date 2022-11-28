@@ -1,91 +1,22 @@
-"""
-Command prompt
-
-Adapted from https://github.com/sirfuzzalot/textual-inputs
-"""
-
-
-import string
-from typing import Any, List, Optional, Tuple, Union
+from textual import events
+from textual.reactive import reactive
+from textual.widget import Widget
+from textual.message import Message, MessageTarget
 
 import rich.box
 from rich.console import RenderableType
 from rich.panel import Panel
 from rich.style import Style
-from rich.text import Text
-from textual import events
-from textual.message_pump import MessagePump
-from textual.reactive import Reactive
-from textual.widget import Widget
-from textual.message import Message
-
-
-class PromptOnChange(Message, bubble=True):
-    """Emitted when the value of an input changes"""
-
-    name = "prompt_on_change"
-
-
-class PromptOnFocus(Message, bubble=True):
-    """Emitted when the input becomes focused"""
-
-    name = "prompt_on_focus"
-
-
-class PromptOnSubmit(Message, bubble=True):
-    """Emitted when the input is submitted"""
-
-    name = "prompt_on_submit"
-
-    def __init__(self, sender: MessagePump, command: str) -> None:
-        self.command = command
-        super().__init__(sender)
 
 
 class CommandPrompt(Widget):
-    """
-    A command prompt.
 
-    Args:
-        name (Optional[str]): The unique name of the widget. If None, the
-            widget will be automatically named.
-        value (str, optional): Defaults to "". The starting text value.
-        placeholder (str, optional): Defaults to "". Text that appears
-            in the widget when value is "" and the widget is not focused.
-        title (str, optional): Defaults to "". A title on the top left
-            of the widget's border.
-        password (bool, optional): Defaults to False. Hides the text
-            input, replacing it with bullets.
-
-    Attributes:
-        value (str): the value of the text field
-        placeholder (str): The placeholder message.
-        title (str): The displayed title of the widget.
-        has_password (bool): True if the text field masks the input.
-        has_focus (bool): True if the widget is focused.
-        cursor (Tuple[str, Style]): The character used for the cursor
-            and a rich Style object defining its appearance.
-
-    Messages:
-        PromptOnChange: Emitted when the contents of the input changes.
-        PromptOnFocus: Emitted when the widget becomes focused.
-        PromptOnSubmit: Emitted when the widget is submitted.
-
-    Examples:
-    .. code-block:: python
-        from textual_inputs import TextInput
-        email_input = TextInput(
-            name="email",
-            placeholder="enter your email address...",
-            title="Email",
-        )
-    """
-
-    value: Reactive[str] = Reactive("")
-    out: Reactive[str] = Reactive("")
-    history: Reactive[list] = Reactive([])
-    history_cursor = Reactive(0)
-    cursor: Tuple[str, Style] = (
+    value = reactive("")
+    out = reactive("")
+    history = reactive([])
+    history_cursor = reactive(0)
+    prompt = ">"
+    cursor = (
         "|",
         Style(
             color="white",
@@ -93,74 +24,32 @@ class CommandPrompt(Widget):
             bold=True,
         ),
     )
-    _cursor_position: Reactive[int] = Reactive(0)
-    _has_focus: Reactive[bool] = Reactive(False)
+    _cursor_position = reactive(0)
+    style = None
+    has_focus = reactive(False)
 
-    def __init__(
-        self,
-        *,
-        name: Optional[str] = None,
-        value: str = "",
-        placeholder: str = "",
-        ps1: str = "> ",
-        title: str = "",
-        password: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(name, **kwargs)
-        self.value = value
-        self.placeholder = placeholder
-        self.ps1 = ps1
-        self.out = ""
-        self.title = title
-        self.has_password = password
-        self._cursor_position = len(self.value)
+    class Submitted(Message):
+        """Color selected message."""
 
-    def __rich_repr__(self):
-        yield "name", self.name
-        yield "title", self.title
-        if self.has_password:
-            value = "".join("•" for _ in self.value)
-        else:
-            value = self.value
-        yield "value", value
+        def __init__(self, sender: MessageTarget, value: str) -> None:
+            self.value = value
+            super().__init__(sender)
 
-    @property
-    def has_focus(self) -> bool:
-        """Produces True if widget is focused"""
-        return self._has_focus
+    def on_mount(self) -> None:
+        pass
 
     def render(self) -> RenderableType:
-        """
-        Produce a Panel object containing placeholder text or value
-        and cursor.
-        """
+        cursor, cursor_style = self.cursor
+        # TODO Handle cursor style
+        # TODO highlight instead of insert character for cursor
         if self.has_focus:
-            segments = self._render_text_with_cursor()
+            value = f"{self.prompt} {self.value[:self._cursor_position]}{cursor}{self.value[self._cursor_position:]}"
         else:
-            if len(self.value) == 0:
-                if self.out:
-                    segments = [(self.out, "grey50")]
-                else:
-                    segments = []
-            else:
-                segments = [self._conceal_or_reveal(self.value)]
-
-        text = Text.assemble(self.ps1, *segments)
-
-        if (
-            self.title
-            and not self.placeholder
-            and len(self.value) == 0
-            and not self.has_focus
-        ):
-            title = ""
-        else:
-            title = self.title
+            value = self.value if self.value else self.prompt
 
         return Panel(
-            text,
-            title=title,
+            value,
+            title="",
             title_align="left",
             height=3,
             style=self.style or "",
@@ -168,43 +57,22 @@ class CommandPrompt(Widget):
             box=rich.box.DOUBLE if self.has_focus else rich.box.SQUARE,
         )
 
-    def _conceal_or_reveal(self, segment: str) -> str:
-        """
-        Produce the segment either concealed like a password or as it
-        was passed.
-        """
-        if self.has_password:
-            return "".join("•" for _ in segment)
-        return segment
+    def reset(self) -> None:
+        self.value = ""
+        self._cursor_position = 0
+        self.has_focus = False
 
-    def _render_text_with_cursor(self) -> List[Union[str, Tuple[str, Style]]]:
-        """
-        Produces the renderable Text object combining value and cursor
-        """
-        if len(self.value) == 0:
-            segments = [self.cursor]
-        elif self._cursor_position == 0:
-            segments = [self.cursor, self._conceal_or_reveal(self.value)]
-        elif self._cursor_position == len(self.value):
-            segments = [self._conceal_or_reveal(self.value), self.cursor]
-        else:
-            segments = [
-                self._conceal_or_reveal(self.value[: self._cursor_position]),
-                self.cursor,
-                self._conceal_or_reveal(self.value[self._cursor_position :]),
-            ]
+    def set_command(self, command) -> None:
+        self.value = command
+        self._cursor_position = len(command)
+        self.has_focus = True
 
-        return segments
-
-    async def on_focus(self, event: events.Focus) -> None:
-        self._has_focus = True
-        self.out = ""
-        await self._emit_on_focus()
-
-    async def on_blur(self, event: events.Blur) -> None:
-        self._has_focus = False
+    def set_out(self, output) -> None:
+        self.reset()
+        self.value = output
 
     async def on_key(self, event: events.Key) -> None:
+        # TODO handle up and down for history
         if event.key == "left":
             if self._cursor_position == 0:
                 self._cursor_position = 0
@@ -221,7 +89,13 @@ class CommandPrompt(Widget):
         elif event.key == "end":
             self._cursor_position = len(self.value)
 
-        elif event.key == "ctrl+h":  # Backspace
+        elif event.key == "enter":
+            if self.value:
+                self.history.append(str(self.value))
+                await self.emit(self.Submitted(self, str(self.value)))
+            self.reset()
+
+        elif event.key == "backspace":
             if self._cursor_position == 0:
                 return
             elif len(self.value) == 1:
@@ -248,8 +122,6 @@ class CommandPrompt(Widget):
                     )
                     self._cursor_position -= 1
 
-            await self._emit_on_change(event)
-
         elif event.key == "delete":
             if self._cursor_position == len(self.value):
                 return
@@ -268,65 +140,7 @@ class CommandPrompt(Widget):
                         self.value[: self._cursor_position]
                         + self.value[self._cursor_position + 1 :]
                     )
-            await self._emit_on_change(event)
-
-        elif event.key == "enter":
-            event.stop()
-            await self._emit_on_submit(self.value)
-            if not self.history or self.history[-1] != self.value:
-                self.history.append(self.value)
-            self.history_cursor = 0
-            self.value = ""
-            await self.app.set_focus(None)
-
-        elif event.key == "up":
-            if len(self.history) > self.history_cursor:
-                self.history_cursor += 1
-                self.set_value(self.history[-self.history_cursor])
-
-        elif event.key == "down":
-            if self.history_cursor > 0:
-                self.history_cursor -= 1
-                if self.history_cursor == 0:
-                    self.set_value("")
-                else:
-                    self.set_value(self.history[-self.history_cursor])
-
-        elif event.key in string.printable:
-            if self._cursor_position == 0:
-                self.value = event.key + self.value
-            elif self._cursor_position == len(self.value):
-                self.value = self.value + event.key
-            else:
-                self.value = (
-                    self.value[: self._cursor_position]
-                    + event.key
-                    + self.value[self._cursor_position :]
-                )
-
-            if not self._cursor_position > len(self.value):
+        else:
+            if event.char:
+                self.value += event.char
                 self._cursor_position += 1
-
-            await self._emit_on_change(event)
-
-    def set_value(self, value):
-        self.value = value
-        self._cursor_position = len(self.value)
-
-    def set_out(self, out):
-        self.out = out
-
-    def clear(self):
-        self.value = ""
-        self.out = ""
-        self._cursor_position = 0
-
-    async def _emit_on_change(self, event: events.Key) -> None:
-        event.stop()
-        await self.emit(PromptOnChange(self))
-
-    async def _emit_on_focus(self) -> None:
-        await self.emit(PromptOnFocus(self))
-
-    async def _emit_on_submit(self, value) -> None:
-        await self.emit(PromptOnSubmit(self, command=value))

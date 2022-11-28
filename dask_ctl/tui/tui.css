@@ -1,0 +1,19 @@
+Screen {
+    layout: grid;
+    grid-size: 4;
+    grid-columns: 4fr 2fr 2fr 1fr;
+    grid-rows: 7 1fr 3;
+    padding: 1 2 1 2
+}
+
+.box {
+    height: 100%;
+}
+
+#clusters {
+    column-span: 4;
+}
+
+#prompt {
+    column-span: 4;
+}

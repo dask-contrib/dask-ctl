@@ -1,36 +1,51 @@
+from collections import deque
+
 from rich.text import Text
 
-from textual import events
 from textual.app import App
 from textual.widget import Widget
+from textual.reactive import reactive
+
+
+LOGO = """
+       :::
+   :::::: ===
+ ::: ====== ###
+ :: === #######
+ :  == ########
+    =  ######
+       ###
+""".strip(
+    "\n"
+)
 
 
 class Logo(Widget):
+    color_key = reactive(
+        {
+            ":": "#FFC11E",
+            "=": "#FC6E6B",
+            "#": "#EF1161",
+        }
+    )
+
     def render(self) -> Text:
-        return Text(
-            """                ╔
-               ╠H
-           _r,╝ ╠
-     ┌╔╗mª^,φ╙╔ ╚⌐
-     ╞L ,φR" é^ ╠
-     ╣  '▌ ╔╩  ╔^
-    ╣ _, ╬    #`
-   "'"`  ▌ ┌#^
-        A╨\"""",
-            style="orange3",
-        )
+        text = Text()
+        for char in LOGO:
+            text.append(char, style=self.color_key.get(char, None))
+        return text
+
+    def on_click(self) -> None:
+        values_deque = deque(self.color_key.values())
+        values_deque.rotate(-1)
+        self.color_key = dict(zip(self.color_key.keys(), values_deque))
 
 
+# Demo widget
 class Demo(App):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    async def on_load(self, event: events.Load) -> None:
-        await self.bind("q", "quit", "Quit")
-
-    async def on_mount(self, event: events.Mount) -> None:
-        await self.view.dock(Logo(), edge="top")
+    def compose(self):
+        yield Logo()
 
 
 if __name__ == "__main__":
-    Demo.run(title="Logo", log="textual.log")
+    Demo.run(title="Logo")

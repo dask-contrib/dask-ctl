@@ -52,7 +52,7 @@ name/cluster manager pairs.
 Then when making calls such as ``get_cluster`` it will attempt to call the ``from_name`` class method on the cluster manager
 and pass in the name that was provided during discovery.
 
-Cluster managers are contructed from name during almost all ``dask-ctl`` operations. Even calling ``daskctl cluster list`` on the CLI
+Cluster managers are contructed from name during almost all ``dask-ctl`` operations. Even calling ``dask cluster list`` on the CLI
 will create all cluster managers in order to query information about them such as number of workers and resources via the scheduler comm.
 
 Implementation of this method will vary drastically depending on how the cluster manager is implemented. But the interface should take the

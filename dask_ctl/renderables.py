@@ -79,7 +79,7 @@ async def generate_table(discovery=None, status=None, console=None):
                     if discovery is None:
                         console.print(
                             f":warning: Discovery {discovery_method} failed. "
-                            f"Run `daskctl cluster list {discovery_method}` for more info.",
+                            f"Run `dask cluster list {discovery_method}` for more info.",
                             style="yellow",
                         )
                     else:

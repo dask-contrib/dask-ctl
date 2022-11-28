@@ -21,7 +21,7 @@ You can then create the cluster from the command line.
 
 .. code-block:: bash
 
-    $ daskctl cluster create -f /path/to/spec.yaml
+    $ dask cluster create -f /path/to/spec.yaml
 
 Or using the Python API.
 

@@ -9,7 +9,7 @@ def load_spec(path):
     if version == 1:
         return load_v1_spec(spec)
     else:
-        raise KeyError(f"No such daskctl cluster spec version {version}")
+        raise KeyError(f"No such dask cluster spec version {version}")
 
 
 def load_v1_spec(spec):

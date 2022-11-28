@@ -5,19 +5,26 @@ from rich.panel import Panel
 from rich.table import Table
 
 from textual import events
-from textual.reactive import Reactive
+from textual.reactive import reactive
 from textual.widget import Widget
+from textual.message import Message, MessageTarget
 
 
 from ...renderables import generate_table
-from ..events import ClusterSelected
 
 
 class ClusterTable(Widget):
 
-    selected = Reactive(0)
-    table: Reactive[Table] = Reactive(Table())
+    selected = reactive(0)
+    table = reactive(Table())
     update_interval = None
+
+    class ClusterSelected(Message):
+        """Cluster selected message."""
+
+        def __init__(self, sender: MessageTarget, cluster: str) -> None:
+            self.cluster = cluster
+            super().__init__(sender)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,12 +34,10 @@ class ClusterTable(Widget):
         return list(self.table.columns[0].cells)[self.selected]
 
     async def reload_table(self):
-        # FIXME Shouldn't need to check if parent is current view to avoid updating and rendering
-        # when table is not visible. Hopefully will be resolved in a future version of textual.
-        if self.parent.parent == self.app.view:
-            self.table = await generate_table()
-            self.table.expand = True
-            self.table.style = "white"
+        self.log("Reloaded cluster table")
+        self.table = await generate_table()
+        self.table.expand = True
+        self.table.style = "white"
 
     async def on_mount(self, event):
         await self.reload_table()
@@ -50,8 +55,7 @@ class ClusterTable(Widget):
                 self.selected += 1
         elif event.key == "enter":
             if self.table.row_count and self.selected < self.table.row_count:
-                await self.post_message(ClusterSelected(self, self.selected_cluster))
-        self.app.refresh()
+                await self.emit(self.ClusterSelected(self, self.selected_cluster))
 
     def render(self) -> Panel:
         table = copy.deepcopy(self.table)

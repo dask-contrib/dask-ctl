@@ -53,7 +53,7 @@ def ui(debug):
         click.echo("Error: Textual is not supported on your system. Sorry!")
         raise click.Abort()
     else:
-        DaskCtlTUI.run(log="textual_debug.log" if debug else None)
+        DaskCtlTUI().run()
 
 
 @cli.group()

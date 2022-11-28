@@ -1,6 +1,7 @@
 import sys
 
 from rich.text import Text
+from textual.app import App
 from textual.widget import Widget
 import dask
 import distributed
@@ -26,3 +27,13 @@ class Info(Widget):
             outs.append((f"{version}: ", "bold orange3"))
             outs.append(f"{self.versions[version]}\n")
         return Text.assemble(*outs)
+
+
+# Demo widget
+class Demo(App):
+    def compose(self):
+        yield Info()
+
+
+if __name__ == "__main__":
+    Demo.run(title="Info")

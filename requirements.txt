@@ -3,6 +3,6 @@ dask>=2021.08.1
 distributed
 numpy
 rich
-textual>=0.1.12
+textual>=0.5.0
 tornado
 pyyaml

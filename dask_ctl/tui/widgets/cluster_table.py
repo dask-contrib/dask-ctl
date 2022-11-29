@@ -13,7 +13,7 @@ from textual.message import Message, MessageTarget
 from ...renderables import generate_table
 
 
-class ClusterTable(Widget):
+class ClusterTable(Widget, can_focus=True):
 
     selected = reactive(0)
     table = reactive(Table())
@@ -34,7 +34,6 @@ class ClusterTable(Widget):
         return list(self.table.columns[0].cells)[self.selected]
 
     async def reload_table(self):
-        self.log("Reloaded cluster table")
         self.table = await generate_table()
         self.table.expand = True
         self.table.style = "white"

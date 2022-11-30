@@ -41,7 +41,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx_click",
     "sphinx.ext.autosummary",
-    "dask_config_sphinx_ext",
+    "dask_sphinx_theme.ext.dask_config_sphinx_ext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

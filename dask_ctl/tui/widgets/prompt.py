@@ -1,7 +1,10 @@
+import asyncio
+
 from textual import events
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.message import Message, MessageTarget
+from textual.binding import Binding
 
 import rich.box
 from rich.console import RenderableType
@@ -10,6 +13,10 @@ from rich.style import Style
 
 
 class CommandPrompt(Widget, can_focus=True):
+
+    BINDINGS = {
+        Binding("escape", "blur()", "Cancel"),
+    }
 
     value = reactive("")
     out = reactive("")
@@ -28,11 +35,14 @@ class CommandPrompt(Widget, can_focus=True):
     style = None
 
     class Submitted(Message):
-        """Color selected message."""
+        """Prompt submitted message."""
 
         def __init__(self, sender: MessageTarget, value: str) -> None:
             self.value = value
             super().__init__(sender)
+
+    class Blurred(Message):
+        """Prompt Blurred message."""
 
     def on_mount(self) -> None:
         pass
@@ -40,8 +50,12 @@ class CommandPrompt(Widget, can_focus=True):
     def on_focus(self) -> None:
         self.out = ""
 
-    def on_blur(self) -> None:
+    async def on_blur(self) -> None:
         self.reset()
+        await self.emit(self.Blurred(self))
+
+    def action_blur(self):
+        self.app.set_focus(None)
 
     def render(self) -> RenderableType:
         cursor, cursor_style = self.cursor
@@ -71,8 +85,12 @@ class CommandPrompt(Widget, can_focus=True):
         self.value = command
         self._cursor_position = len(command)
 
-    def set_out(self, output) -> None:
+    async def set_out(self, output, timeout=None) -> None:
         self.out = output
+        self.refresh()
+        if timeout:
+            asyncio.sleep(timeout)
+            self.out = ""
 
     async def on_key(self, event: events.Key) -> None:
         # TODO handle up and down for history

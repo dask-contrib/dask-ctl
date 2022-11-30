@@ -1,3 +1,4 @@
+import os
 import sys
 
 from rich.text import Text
@@ -13,12 +14,13 @@ class Info(Widget):
 
         from ... import __version__
 
-        self.versions = {
-            "python": sys.version.split("|")[0].strip(),
-            "dask": dask.__version__,
-            "distributed": distributed.__version__,
-            "dask-ctl": __version__,
-        }
+        self.versions = {}
+        self.versions["python"] = sys.version.split("|")[0].strip()
+        if env := os.environ.get("CONDA_DEFAULT_ENV"):
+            self.versions["conda environment"] = env
+        self.versions["dask"] = dask.__version__
+        self.versions["distributed"] = distributed.__version__
+        self.versions["dask-ctl"] = __version__
 
     def render(self) -> Text:
         outs = []

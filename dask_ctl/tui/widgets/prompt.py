@@ -13,8 +13,9 @@ class CommandPrompt(Widget, can_focus=True):
 
     value = reactive("")
     out = reactive("")
-    history = reactive([])
-    history_cursor = reactive(0)
+    _history = reactive([])
+    _history_cursor = reactive(0)
+    _history_stash = ""
     prompt = ">"
     cursor = (
         "|",
@@ -65,6 +66,8 @@ class CommandPrompt(Widget, can_focus=True):
     def reset(self) -> None:
         self.value = ""
         self._cursor_position = 0
+        self._history_stash = ""
+        self._history_cursor = 0
 
     def set_command(self, command) -> None:
         self.focus()
@@ -86,6 +89,25 @@ class CommandPrompt(Widget, can_focus=True):
             if self._cursor_position != len(self.value):
                 self._cursor_position = self._cursor_position + 1
 
+        elif event.key == "up":
+            if self._history_cursor == 0:
+                self._history_stash = self.value
+            if self._history_cursor < len(self._history):
+                self._history_cursor += 1
+                self.value = self._history[-self._history_cursor]
+                self._cursor_position = len(self.value)
+
+        elif event.key == "down":
+            if self._history_cursor > 0:
+                self._history_cursor -= 1
+                if self._history_cursor == 0:
+                    if self._history_stash:
+                        self.value = self._history_stash
+                        self._history_stash = ""
+                else:
+                    self.value = self._history[-self._history_cursor]
+                self._cursor_position = len(self.value)
+
         elif event.key == "home":
             self._cursor_position = 0
 
@@ -94,12 +116,15 @@ class CommandPrompt(Widget, can_focus=True):
 
         elif event.key == "enter":
             if self.value:
-                self.history.append(str(self.value))
-                await self.emit(self.Submitted(self, str(self.value)))
+                value = str(self.value)
+                if not self._history or self._history[-1] != value:
+                    self._history.append(value)
+                await self.emit(self.Submitted(self, value))
             self.reset()
             self.app.set_focus(None)
 
         elif event.key == "tab":
+            # TODO implement tab completion
             pass
 
         elif event.key == "backspace":

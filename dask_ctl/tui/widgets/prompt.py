@@ -9,7 +9,7 @@ from rich.panel import Panel
 from rich.style import Style
 
 
-class CommandPrompt(Widget):
+class CommandPrompt(Widget, can_focus=True):
 
     value = reactive("")
     out = reactive("")
@@ -26,7 +26,6 @@ class CommandPrompt(Widget):
     )
     _cursor_position = reactive(0)
     style = None
-    has_focus = reactive(False)
 
     class Submitted(Message):
         """Color selected message."""
@@ -38,6 +37,12 @@ class CommandPrompt(Widget):
     def on_mount(self) -> None:
         pass
 
+    def on_focus(self) -> None:
+        self.out = ""
+
+    def on_blur(self) -> None:
+        self.reset()
+
     def render(self) -> RenderableType:
         cursor, cursor_style = self.cursor
         # TODO Handle cursor style
@@ -45,7 +50,7 @@ class CommandPrompt(Widget):
         if self.has_focus:
             value = f"{self.prompt} {self.value[:self._cursor_position]}{cursor}{self.value[self._cursor_position:]}"
         else:
-            value = self.value if self.value else self.prompt
+            value = self.out if self.out else self.value if self.value else self.prompt
 
         return Panel(
             value,
@@ -60,16 +65,14 @@ class CommandPrompt(Widget):
     def reset(self) -> None:
         self.value = ""
         self._cursor_position = 0
-        self.has_focus = False
 
     def set_command(self, command) -> None:
+        self.focus()
         self.value = command
         self._cursor_position = len(command)
-        self.has_focus = True
 
     def set_out(self, output) -> None:
-        self.reset()
-        self.value = output
+        self.out = output
 
     async def on_key(self, event: events.Key) -> None:
         # TODO handle up and down for history
@@ -94,6 +97,10 @@ class CommandPrompt(Widget):
                 self.history.append(str(self.value))
                 await self.emit(self.Submitted(self, str(self.value)))
             self.reset()
+            self.app.set_focus(None)
+
+        elif event.key == "tab":
+            pass
 
         elif event.key == "backspace":
             if self._cursor_position == 0:

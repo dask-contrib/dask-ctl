@@ -37,6 +37,10 @@ class DaskCtlTUI(App):
     command_prompt = CommandPrompt(id="prompt", classes="box")
     cluster_table = ClusterTable(id="clusters", classes="box")
 
+    def on_key(self, event: events.Key) -> None:
+        if event.key == "tab" or event.key == "shift+tab":
+            event.prevent_default()
+
     def compose(self) -> ComposeResult:
         yield Info(id="info", classes="box")
         yield KeyBindings(id="bindings", classes="box")
@@ -48,12 +52,10 @@ class DaskCtlTUI(App):
     def on_load(self):
         self.log("Loaded Dask Control TUI")
 
-    async def on_key(self, event: events.Key) -> None:
-        # TODO actually use focus rather than fake it
-        if self.command_prompt.has_focus:
-            await self.command_prompt.on_key(event)
-        else:
-            await self.cluster_table.on_key(event)
+    def on_mount(self) -> None:
+        # When the app starts, we force focus to the cluster table and then focus
+        # won't be lost again.
+        self.query_one(ClusterTable).focus()
 
     def action_graceful_quit(self) -> None:
         # TODO figure out how to disable bindings when prompt has focus
@@ -83,12 +85,10 @@ class DaskCtlTUI(App):
             )
 
     def action_focus_prompt(self):
-        # TODO actually use focus rather than fake it
-        if not self.command_prompt.has_focus:
-            self.command_prompt.set_command("")
+        self.command_prompt.focus()
 
     def action_blur(self):
-        self.command_prompt.reset()
+        self.cluster_table.focus()
 
     async def action_scale(self, cluster_name: str, replicas: int):
         """Scale cluster"""
@@ -123,6 +123,7 @@ class DaskCtlTUI(App):
         using a COMMANDS constant with bindings in. Space separated arguments
         after the subcommand are passed as arguments to the action.
         """
+        self.set_focus(self.cluster_table)
         command, *params = message.value.strip().split(" ")
         try:
             [binding] = [c for c in self.COMMANDS if c.key == command]

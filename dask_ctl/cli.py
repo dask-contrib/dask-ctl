@@ -1,3 +1,4 @@
+import os
 from time import sleep
 import sys
 import warnings
@@ -280,11 +281,16 @@ def version():
 @click.option("--debug/--no-debug", default=False)
 def ui(debug):
     """Open the Dask Control Text UI."""
-    if DaskCtlTUI is None:
-        click.echo("Error: Textual is not supported on your system. Sorry!")
-        raise click.Abort()
-    else:
-        DaskCtlTUI().run()
+    from textual.features import parse_features
+
+    features = set(parse_features(os.environ.get("TEXTUAL", "")))
+    if debug:
+        features.add("debug")
+        features.add("devtools")
+
+    os.environ["TEXTUAL"] = ",".join(sorted(features))
+
+    DaskCtlTUI().run()
 
 
 def daskctl():

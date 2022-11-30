@@ -19,14 +19,6 @@ from .widgets import (
 
 class DaskCtlTUI(App):
     CSS_PATH = "tui.css"
-    BINDINGS = [
-        Binding("q", "graceful_quit()", "Quit"),
-        Binding("r", "refresh()", "Refresh list"),
-        Binding("s", "set_scale_prompt()", "Scale cluster"),
-        Binding("c", "set_close_prompt()", "Close cluster"),
-        Binding("colon", "focus_prompt()", "New Command", key_display=":"),
-        Binding("escape", "blur()", "Blur", show=False),
-    ]
     COMMANDS = [
         Binding("quit", "quit()", "Quit"),
         Binding("q", "quit()", "Quit", show=False),
@@ -57,38 +49,28 @@ class DaskCtlTUI(App):
         # won't be lost again.
         self.query_one(ClusterTable).focus()
 
-    def action_graceful_quit(self) -> None:
-        # TODO figure out how to disable bindings when prompt has focus
-        if not self.command_prompt.has_focus:
-            self.log("Quitting")
-            return self.app.exit()
+    def on_focus(self) -> None:
+        self.log("Focus changed")
 
-    async def action_refresh(self):
-        # TODO figure out how to disable bindings when prompt has focus
-        if not self.command_prompt.has_focus:
-            self.command_prompt.set_out("Refreshing...")
-            self.refresh()
-            self.set_timer(0.5, self.command_prompt.reset)
+    def on_cluster_table_graceful_quit(
+        self, message: ClusterTable.GracefulQuit
+    ) -> None:
+        self.log("Quitting")
+        return self.app.exit()
 
-    def action_set_scale_prompt(self) -> None:
-        # TODO figure out how to disable bindings when prompt has focus
-        if not self.command_prompt.has_focus:
-            self.command_prompt.set_command(
-                f"scale {self.cluster_table.selected_cluster} "
-            )
+    async def on_cluster_table_refresh(self, message: ClusterTable.Refresh):
+        await self.command_prompt.set_out("Refreshing...", timeout=0.5)
+        self.cluster_table.refresh()
 
-    def action_set_close_prompt(self) -> None:
-        # TODO figure out how to disable bindings when prompt has focus
-        if not self.command_prompt.has_focus:
-            self.command_prompt.set_command(
-                f"close {self.cluster_table.selected_cluster}"
-            )
+    def on_cluster_table_set_scale_prompt(
+        self, message: ClusterTable.SetScalePrompt
+    ) -> None:
+        self.command_prompt.set_command(f"scale {message.cluster} ")
 
-    def action_focus_prompt(self):
-        self.command_prompt.focus()
-
-    def action_blur(self):
-        self.cluster_table.focus()
+    def on_cluster_table_set_close_prompt(
+        self, message: ClusterTable.SetClosePrompt
+    ) -> None:
+        self.command_prompt.set_command(f"close {message.cluster}")
 
     async def action_scale(self, cluster_name: str, replicas: int):
         """Scale cluster"""
@@ -135,13 +117,19 @@ class DaskCtlTUI(App):
             method = getattr(self, method_name, None)
             if method is not None:
                 if count_parameters(method) != len(params):
-                    self.command_prompt.set_out(
+                    await self.command_prompt.set_out(
                         f"Error: '{command}' requires {count_parameters(method)} arguments {signature(method)}"
                     )
                 else:
-                    self.command_prompt.set_out(await invoke(method, *params))
+                    await self.command_prompt.set_out(await invoke(method, *params))
         except ValueError:
-            self.command_prompt.set_out(f"Unknown command '{command}'")
+            await self.command_prompt.set_out(f"Unknown command '{command}'")
+
+    async def on_command_prompt_blurred(self, message: CommandPrompt.Blurred) -> None:
+        self.cluster_table.focus()
+
+    async def on_cluster_table_focus_prompt(self):
+        self.command_prompt.focus()
 
     async def on_cluster_table_cluster_selected(
         self, message: ClusterTable.ClusterSelected

@@ -17,3 +17,20 @@ Screen {
 #prompt {
     column-span: 4;
 }
+
+Splash {
+    layout: vertical;
+    align: center middle;
+}
+
+Splash>Logo {
+    height: 7;
+    content-align-horizontal: center;
+}
+
+Splash>SplashInfo {
+    margin: 2 0;
+    height: 6;
+    content-align-horizontal: center;
+    text-align: center;
+}

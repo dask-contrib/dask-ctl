@@ -4,6 +4,7 @@ from textual.app import App, ComposeResult
 from textual import events
 from textual.binding import Binding
 from textual._callback import invoke, count_parameters
+from textual.screen import Screen
 
 from ..lifecycle import get_cluster
 
@@ -14,7 +15,20 @@ from .widgets import (
     CommandReference,
     ClusterTable,
     CommandPrompt,
+    SplashInfo,
 )
+
+
+class Splash(Screen):
+    BINDINGS = [("escape", "app.pop_screen", "Pop screen")]
+
+    def compose(self) -> ComposeResult:
+        yield Logo()
+        yield SplashInfo()
+
+    def on_mount(self) -> None:
+        self.set_interval(0.25, self.query_one(Logo).rotate_colors)
+        self.set_timer(1, self.app.pop_screen)
 
 
 class DaskCtlTUI(App):
@@ -25,6 +39,9 @@ class DaskCtlTUI(App):
         Binding("scale", "scale()", "Scale cluster"),
         Binding("close", "close()", "Close cluster"),
     ]
+    SCREENS = {
+        "splash": Splash(),
+    }
 
     command_prompt = CommandPrompt(id="prompt", classes="box")
     cluster_table = ClusterTable(id="clusters", classes="box")
@@ -48,6 +65,7 @@ class DaskCtlTUI(App):
         # When the app starts, we force focus to the cluster table and then focus
         # won't be lost again.
         self.query_one(ClusterTable).focus()
+        self.push_screen("splash")
 
     def on_focus(self) -> None:
         self.log("Focus changed")

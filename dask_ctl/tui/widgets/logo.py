@@ -35,10 +35,13 @@ class Logo(Widget):
             text.append(char, style=self.color_key.get(char, None))
         return text
 
-    def on_click(self) -> None:
+    def rotate_colors(self) -> None:
         values_deque = deque(self.color_key.values())
         values_deque.rotate(-1)
         self.color_key = dict(zip(self.color_key.keys(), values_deque))
+
+    def on_click(self) -> None:
+        self.rotate_colors()
 
 
 # Demo widget

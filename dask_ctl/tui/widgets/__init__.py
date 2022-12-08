@@ -9,3 +9,4 @@ from .prompt import CommandPrompt
 from .nbytes import NBytes
 from .processing import Processing
 from .taskstream import TaskStream
+from .splash import SplashInfo

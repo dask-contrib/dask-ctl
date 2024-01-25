@@ -52,7 +52,7 @@ release = __version__
 
 html_theme = "dask_sphinx_theme"
 html_theme_path = [dask_sphinx_theme.get_html_theme_path()]
-
+html_theme_options = {}
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".

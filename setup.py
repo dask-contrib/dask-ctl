@@ -22,8 +22,9 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=requirements,
+    extras_require={"tui": ["textual==0.5.0"]},
     entry_points="""
         [console_scripts]
         daskctl=dask_ctl.cli:daskctl

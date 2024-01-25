@@ -2,7 +2,7 @@ from typing import Callable, AsyncIterator, Tuple
 import asyncio
 import contextlib
 
-import psutil
+# import psutil
 
 from distributed.deploy.cluster import Cluster
 from distributed.core import rpc, Status
@@ -141,17 +141,17 @@ async def discover() -> AsyncIterator[Tuple[str, Callable]]:
     """
     open_ports = {8786}
 
-    with contextlib.suppress(
-        psutil.AccessDenied
-    ):  # On macOS this needs to be run as root
-        connections = psutil.net_connections()
-        for connection in connections:
-            if (
-                connection.status == "LISTEN"
-                and connection.family.name == "AF_INET"
-                and connection.laddr.port not in open_ports
-            ):
-                open_ports.add(connection.laddr.port)
+    # with contextlib.suppress(
+    #     psutil.AccessDenied
+    # ):  # On macOS this needs to be run as root
+    #     connections = psutil.net_connections()
+    #     for connection in connections:
+    #         if (
+    #             connection.status == "LISTEN"
+    #             and connection.family.name == "AF_INET"
+    #             and connection.laddr.port not in open_ports
+    #         ):
+    #             open_ports.add(connection.laddr.port)
 
     async def try_connect(port):
         with contextlib.suppress(OSError, asyncio.TimeoutError):

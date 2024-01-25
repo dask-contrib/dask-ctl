@@ -9,7 +9,6 @@ install_signal_handlers(loop)
 
 
 class _AsyncTimedIterator:
-
     __slots__ = ("_iterator", "_timeout", "_sentinel")
 
     def __init__(self, iterable, timeout):

@@ -5,7 +5,6 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 from datetime import datetime
-import dask_sphinx_theme
 from dask_ctl import __version__
 
 # -- Path setup --------------------------------------------------------------
@@ -51,7 +50,6 @@ release = __version__
 #
 
 html_theme = "dask_sphinx_theme"
-html_theme_path = [dask_sphinx_theme.get_html_theme_path()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -1,4 +1,3 @@
-import os
 from time import sleep
 import sys
 import warnings
@@ -18,8 +17,6 @@ from .discovery import (
 )
 from .lifecycle import create_cluster, get_cluster, delete_cluster, get_snippet
 from .renderables import generate_table
-
-from .tui import DaskCtlTUI
 
 from . import config  # noqa
 
@@ -92,7 +89,6 @@ def list(discovery=None):
     """
 
     async def _list():
-
         with console.status("[bold green]Discovering clusters...") as status:
             table = await generate_table(
                 discovery=discovery, status=status, console=console
@@ -275,22 +271,6 @@ def disable_discovery(name):
 def version():
     """Show the dask-ctl version."""
     click.echo(f"dask-ctl: {__version__}")
-
-
-@cluster.command()
-@click.option("--debug/--no-debug", default=False)
-def ui(debug):
-    """Open the Dask Control Text UI."""
-    from textual.features import parse_features
-
-    features = set(parse_features(os.environ.get("TEXTUAL", "")))
-    if debug:
-        features.add("debug")
-        features.add("devtools")
-
-    os.environ["TEXTUAL"] = ",".join(sorted(features))
-
-    DaskCtlTUI().run()
 
 
 def daskctl():

@@ -1,40 +1,38 @@
 Python API
 ==========
 
-.. currentmodule:: dask_ctl
-
 Lifecycle
 ---------
 
 .. autosummary::
-    get_cluster
-    create_cluster
-    scale_cluster
-    delete_cluster
-    list_clusters
+    dask_ctl.lifecycle.get_cluster
+    dask_ctl.lifecycle.create_cluster
+    dask_ctl.lifecycle.scale_cluster
+    dask_ctl.lifecycle.delete_cluster
+    dask_ctl.lifecycle.list_clusters
 
-.. autofunction:: get_cluster
+.. autofunction:: dask_ctl.lifecycle.get_cluster
 
-.. autofunction:: create_cluster
+.. autofunction:: dask_ctl.lifecycle.create_cluster
 
-.. autofunction:: scale_cluster
+.. autofunction:: dask_ctl.lifecycle.scale_cluster
 
-.. autofunction:: delete_cluster
+.. autofunction:: dask_ctl.lifecycle.delete_cluster
 
-.. autofunction:: list_clusters
+.. autofunction:: dask_ctl.lifecycle.list_clusters
 
-.. autofunction:: get_snippet
+.. autofunction:: dask_ctl.lifecycle.get_snippet
 
 Discovery
 ---------
 
 .. autosummary::
-    discover_cluster_names
-    discover_clusters
-    list_discovery_methods
+    dask_ctl.discovery.discover_cluster_names
+    dask_ctl.discovery.discover_clusters
+    dask_ctl.discovery.list_discovery_methods
 
-.. autofunction:: discover_cluster_names
+.. autofunction:: dask_ctl.discovery.discover_cluster_names
 
-.. autofunction:: discover_clusters
+.. autofunction:: dask_ctl.discovery.discover_clusters
 
-.. autofunction:: list_discovery_methods
+.. autofunction:: dask_ctl.discovery.list_discovery_methods

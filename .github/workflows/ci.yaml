@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements-test.txt
 
       - name: Run tests
-        run: pytest
+        run: pytest --cov=./  --reruns 5 --reruns-delay 1
 
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v1

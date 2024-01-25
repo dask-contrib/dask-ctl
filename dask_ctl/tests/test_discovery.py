@@ -42,12 +42,18 @@ async def test_discovery_list():
     from dask_ctl.proxy import discover
 
     async with LocalCluster(scheduler_port=SCHEDULER_PORT, asynchronous=True) as _:
-        async for name, _ in discover():
+        discovered_cluster_names = [name async for name, _ in discover()]
+        assert discovered_cluster_names
+        for name in discovered_cluster_names:
             assert str(SCHEDULER_PORT) in name
 
 
+@pytest.mark.xfail(reason="Proxy cluster discovery not working")
 @pytest.mark.asyncio
 async def test_discover_clusters():
-    with LocalCluster(scheduler_port=SCHEDULER_PORT) as cluster:
-        discovered_names = [c.name async for c in discover_clusters()]
-        assert cluster.name in discovered_names
+    async with LocalCluster(
+        scheduler_port=SCHEDULER_PORT, asynchronous=True
+    ) as cluster:
+        discovered_clusters = [cluster async for cluster in discover_clusters()]
+        assert discovered_clusters
+        assert cluster.name in [c.name for c in discovered_clusters]

@@ -101,7 +101,9 @@ async def discover_cluster_names(
                     warnings.warn(
                         f"Cluster discovery for {discovery_method} timed out."
                     )
-        except Exception as e:  # We are calling code that is out of our control here, so handling broad exceptions
+        except (
+            Exception
+        ) as e:  # We are calling code that is out of our control here, so handling broad exceptions
             if discovery is None:
                 warnings.warn(f"Cluster discovery for {discovery_method} failed.")
             else:

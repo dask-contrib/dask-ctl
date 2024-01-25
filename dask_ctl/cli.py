@@ -89,7 +89,6 @@ def list(discovery=None):
     """
 
     async def _list():
-
         with console.status("[bold green]Discovering clusters...") as status:
             table = await generate_table(
                 discovery=discovery, status=status, console=console

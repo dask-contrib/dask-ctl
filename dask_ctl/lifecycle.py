@@ -1,6 +1,7 @@
 import importlib
 from typing import List
 
+import dask.config
 from dask.widgets import get_template
 from dask.utils import typename
 from distributed.deploy import LocalCluster
@@ -12,7 +13,7 @@ from .exceptions import DaskClusterConfigNotFound
 
 
 def create_cluster(
-    spec_path: str = "dask-cluster.yaml",
+    spec_path: str = None,
     local_fallback: bool = False,
     asynchronous: bool = False,
 ) -> Cluster:
@@ -47,6 +48,10 @@ def create_cluster(
     LocalCluster(b3973c71, 'tcp://127.0.0.1:8786', workers=4, threads=12, memory=17.18 GB)
 
     """
+    spec_path = (
+        dask.config.get("ctl.cluster-spec", None, override_with=spec_path)
+        or "dask-cluster.yaml"
+    )
 
     async def _create_cluster():
         try:

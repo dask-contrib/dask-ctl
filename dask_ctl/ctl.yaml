@@ -1,2 +1,3 @@
 ctl:
   disable_discovery: []
+  cluster-spec: null

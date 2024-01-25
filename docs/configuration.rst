@@ -10,5 +10,5 @@ Reference
 
 .. dask-config-block::
     :location: ctl
-    :config: https://raw.githubusercontent.com/dask-contrib/dask-ctl/main/dask-ctl/ctl.yaml
-    :schema: https://raw.githubusercontent.com/dask-contrib/dask-ctl/main/dask-ctl/ctl-schema.yaml
+    :config: https://raw.githubusercontent.com/dask-contrib/dask-ctl/main/dask_ctl/ctl.yaml
+    :schema: https://raw.githubusercontent.com/dask-contrib/dask-ctl/main/dask_ctl/ctl-schema.yaml

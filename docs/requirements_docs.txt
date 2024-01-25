@@ -3,3 +3,4 @@ sphinx-autobuild
 myst-parser
 sphinx-click
 dask-sphinx-theme>=3.0.0
+sphinxcontrib-applehelp

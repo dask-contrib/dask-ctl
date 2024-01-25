@@ -1,5 +1,5 @@
 from ._version import get_versions
-
+from .exceptions import DaskClusterConfigNotFound  # noqa
 import os.path
 
 from dask.widgets import TEMPLATE_PATHS

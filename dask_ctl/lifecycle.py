@@ -3,19 +3,29 @@ from typing import List
 
 from dask.widgets import get_template
 from dask.utils import typename
+from distributed.deploy import LocalCluster
 from distributed.deploy.cluster import Cluster
 from .discovery import discover_cluster_names, discover_clusters
 from .spec import load_spec
 from .utils import loop
+from .exceptions import DaskClusterConfigNotFound
 
 
-def create_cluster(spec_path: str) -> Cluster:
+def create_cluster(
+    spec_path: str = "dask-cluster.yaml",
+    local_fallback: bool = False,
+    asynchronous: bool = False,
+) -> Cluster:
     """Create a cluster from a spec file.
 
     Parameters
     ----------
     spec_path
-        Path to a cluster spec file.
+        Path to a cluster spec file. Defaults to ``dask-cluster.yaml``.
+    local_fallback
+        Create a LocalCluster if spec file not found.
+    asynchronous
+        Start the cluster in asynchronous mode
 
     Returns
     -------
@@ -39,13 +49,19 @@ def create_cluster(spec_path: str) -> Cluster:
     """
 
     async def _create_cluster():
-        cm_module, cm_class, args, kwargs = load_spec(spec_path)
+        try:
+            cm_module, cm_class, args, kwargs = load_spec(spec_path)
+        except FileNotFoundError as e:
+            if local_fallback:
+                return LocalCluster(asynchronous=asynchronous)
+            else:
+                raise DaskClusterConfigNotFound(f"Unable to find {spec_path}") from e
         module = importlib.import_module(cm_module)
         cluster_manager = getattr(module, cm_class)
 
         kwargs = {key.replace("-", "_"): entry for key, entry in kwargs.items()}
 
-        cluster = await cluster_manager(*args, **kwargs, asynchronous=True)
+        cluster = cluster_manager(*args, **kwargs, asynchronous=asynchronous)
         cluster.shutdown_on_close = False
         return cluster
 
